@@ -33,7 +33,7 @@ flutter pub get
 
 ### ✅ 3. Firebase Setup
 
-Each developer must set up their own Firebase project or reuse the main one.
+Each developer must set up their own Firebase project or reuse the main one. (i will recommend Option A because You dont need create new project so use the shared one)
 
 #### Option A: Using the Same Firebase Project
 
