@@ -16,66 +16,113 @@ This app allows users to **generate professional CVs using voice input**. With A
 
 ---
 
-## 🛠️ Project Setup for Developers
+## 🛠️ Full Setup Guide (For Developers)
 
-### ✅ 1. Clone the Repository
+Follow these steps carefully to get the app running locally:
+
+---
+
+### ✅ 1. Prerequisites
+
+Make sure you have:
+
+- [Flutter SDK](https://docs.flutter.dev/get-started/install) installed and added to your path
+- [Android Studio](https://developer.android.com/studio) (with Flutter/Dart plugins)
+- A device/emulator to test the app
+- Access to the Firebase project (provided by project lead)
+
+---
+
+### ✅ 2. Clone the Repository
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/YOUR_REPO_NAME.git
-cd YOUR_REPO_NAME
+git clone https://github.com/DanialShah11/cvapp.git
+cd cvapp
 ```
 
-### ✅ 2. Install Dependencies
+---
+
+### ✅ 3. Install Dependencies
 
 ```bash
 flutter pub get
 ```
 
-### ✅ 3. Firebase Setup
+---
 
-Each developer must set up their own Firebase project or reuse the main one. (i will recommend Option A because You dont need create new project so use the shared one)
+### ✅ 4. Firebase Configuration
 
-#### Option A: Using the Same Firebase Project
+> ⚠️ Use Option A below unless you're explicitly setting up your own Firebase instance.
 
-1. Ask the owner to add your email to the [Firebase Console → Project Settings → Users & Permissions](https://console.firebase.google.com/).
-2. Once invited, go to Firebase Console → the project.
-3. Download your own `google-services.json`:
-   - Go to **Project settings > Android app**
-   - Download `google-services.json`
-   - Place it in:
+#### 🔹 Option A: Use Shared Firebase Project (Recommended)
 
-     ```
-     android/app/google-services.json
-     ```
+1. Ask the project lead to **add your email** to Firebase console:
+2. After invitation, log in at [console.firebase.google.com](https://console.firebase.google.com) and go to the shared project.
+3. Go to:
+   - Project Settings → Android App → Download `google-services.json`
+4. Copy the file to the following path:
 
-4. (✅ This file is ignored in Git with `.gitignore`)
+   ```
+   android/app/google-services.json
+   ```
 
-#### Option B: Create Your Own Firebase Project
+5. That's it! You're now connected to the shared Firebase backend.
 
-- Go to [Firebase Console](https://console.firebase.google.com/)
-- Create new project
-- Enable:
-  - **Google Sign-in** in Firebase Auth
-  - **Cloud Firestore**
-- Add Android app → download and place `google-services.json` into `android/app/`
+> ✅ This file is ignored by Git and won't be pushed (already listed in `.gitignore`)
 
 ---
 
-## 📤 Git Commands to Push & Pull Code
+#### 🔹 Option B: Use Your Own Firebase Project
 
-### ✅ Pull latest changes
+Only if you're building/testing independently:
+
+- Create a new Firebase project
+- Add an Android app in Firebase
+- Enable:
+  - Firebase Authentication (Google Sign-In)
+  - Firestore Database
+- Download `google-services.json` and place it in `android/app/`
+- You must also run:
+
+```bash
+flutterfire configure
+```
+
+This generates `lib/firebase_options.dart` — make sure it's created before running the app.
+
+---
+
+### ✅ 5. Run the App
+
+For Android:
+
+```bash
+flutter run
+```
+
+If you face errors related to Firebase config, double-check your `google-services.json` and `firebase_options.dart`.
+
+---
+
+## 📤 Git Workflow (Push & Pull Code)
+
+### 🔄 Pull Latest Changes ( download code to local PC)
+## Make sure you always pull code before you start working to avoid conflict
 
 ```bash
 git pull origin main
 ```
 
-### ✅ Push your updates
+### 💾 Push Your Updates ( upload code to github)
+## Make sure you double check errors and test output before push 
 
 ```bash
 git add .
-git commit -m "Meaningful message"
+git commit -m "Descriptive message"
 git push origin main
 ```
+
+> 📌 Always pull before pushing to avoid conflicts.
 
 ---
 
@@ -111,24 +158,37 @@ lib/
 
 ---
 
-## ⚙️ Important Notes
+## ⚠️ Common Issues
 
-- ✅ `google-services.json` is **ignored** by Git (`.gitignore`)
-- ✅ Always **pull before pushing** to avoid conflicts
-- 🚀 Use **feature branches** for larger features
-- 💬 Keep commit messages short and clear
+- `google-services.json` missing:
+  - Make sure it's in `android/app/`
+- `firebase_options.dart` missing:
+  - Run: `flutterfire configure` or ask team lead for the file
+- iOS issues?
+  - This project currently supports **Android only**
+
+---
+
+## ⚙️ Developer Notes
+
+- 🔐 Sensitive config (like API keys or Firebase files) are **not stored in Git**
+- 🔄 Sync with team before making major changes
+- 🧪 Test your flow before pushing to main branch
 
 ---
 
 ## 🤝 Contributing
 
-Feel free to fork and contribute! Discuss major feature ideas in issues or team chat before starting.
+- Open issues for bugs or feature ideas
+- Create branches for features/fixes
+- Use clear commit messages (`feat:`, `fix:`, etc.)
+- Pull Requests are welcome!
 
 ---
 
 ## 📬 Contact
 
-**Project Lead**: [Your Name]  
-📧 Email: projectcvapp622@gmail.com  
-🔐 Firebase Access: Ask project owner to invite you via email
+**Project Lead**: [Danial Shah]  
+📧 Email: `projectcvapp622@gmail.com`  
+💬 Firebase Access: Ask lead to invite your Google email
 
