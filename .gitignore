@@ -48,6 +48,8 @@ android/app/debug/
 android/app/profile/
 android/app/release/
 android/local.properties
+android/app/google-services.json
+
 
 # macOS/iOS (if building iOS/macOS apps)
 ios/Pods/
