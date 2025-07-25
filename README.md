@@ -107,14 +107,14 @@ If you face errors related to Firebase config, double-check your `google-service
 ## 📤 Git Workflow (Push & Pull Code)
 
 ### 🔄 Pull Latest Changes ( download code to local PC)
-## Make sure you always pull code before you start working to avoid conflict
+> Make sure you always pull code before you start working to avoid conflict
 
 ```bash
 git pull origin main
 ```
 
 ### 💾 Push Your Updates ( upload code to github)
-## Make sure you double check errors and test output before push 
+> Make sure you double check errors and test output before push 
 
 ```bash
 git add .
