@@ -83,29 +83,30 @@ git push origin feature/your-work
 ```
 
 ### ❗ What NOT to Do
-❌ Don’t Do This	
-Don’t push to main	
-Don’t work on old code	
-Don’t ignore errors	
-Don’t push secrets	
+❌ Don’t Do This	:
+Don’t push to main,	
+Don’t work on old code,	
+Don’t ignore errors,	
+Don’t push secrets.	
 
-✅ Do This Instead
-Use your own branch
-Pull latest changes first
-Test your code before PR
+✅ Do This Instead:
+Use your own branch,
+Pull latest changes first,
+Test your code before PR,
 google-services.json is ignored ✅
 
 
 ### 🧠 Simple Commit Message Tips
 Use clear prefixes:
 
-feat: → New feature
+| Prefix      | Use for...               |
+| ----------- | ------------------------ |
+| `feat:`     | New features             |
+| `fix:`      | Bug fixes                |
+| `refactor:` | Code cleanup/refactoring |
+| `docs:`     | Documentation changes    |
+| `style:`    | UI or styling tweaks     |
 
-fix: → Bug fix
-
-docs: → Docs updated
-
-style: → UI/style updates
 
 Example:
 git commit -m "feat: created CV preview screen"
