@@ -10,8 +10,8 @@
 ### 1️⃣ Clone the Project (First Time Only)
 
 ```bash
-git clone https://github.com/YourUsername/YourRepo.git
-cd YourRepo
+git clone https://github.com/DanialShah11/cvapp.git
+cd cvapp
 ```
 ### 2️⃣ Always Pull Latest Code Before Starting
 
