@@ -1,0 +1,69 @@
+# Miscellaneous
+*.class
+*.log
+*.pyc
+*.swp
+.DS_Store
+.atom/
+.buildlog/
+.history
+.svn/
+migrate_working_dir/
+
+# IntelliJ related
+*.iml
+*.ipr
+*.iws
+.idea/
+
+# VS Code (optional: uncomment if you're sure)
+.vscode/
+
+# Flutter/Dart/Pub related
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.flutter-versions
+.packages
+.pub-cache/
+.pub/
+build/
+**/doc/api/
+**/ios/Flutter/.last_build_id
+
+# Firebase (optional: ignore if you don’t want to push config)
+firebase_options.dart
+
+# Symbolication related
+app.*.symbols
+
+# Obfuscation related
+app.*.map.json
+
+# Android Studio/Gradle
+.android/
+.gradle/
+android/.gradle/
+android/app/debug/
+android/app/profile/
+android/app/release/
+android/local.properties
+
+# macOS/iOS (if building iOS/macOS apps)
+ios/Pods/
+ios/.symlinks/
+ios/Flutter/ephemeral/
+ios/Runner.xcworkspace/
+ios/Runner.xcuserstate
+macos/Flutter/ephemeral/
+macos/Pods/
+macos/.symlinks/
+
+# Linux
+linux/flutter/ephemeral/
+
+# Windows
+windows/flutter/ephemeral/
+
+# Web
+web/.dart_tool/

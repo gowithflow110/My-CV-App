@@ -1,0 +1,52 @@
+plugins {
+    id 'com.android.application'
+    id 'kotlin-android'
+    id 'com.google.gms.google-services' // ✅ Firebase plugin
+    id 'dev.flutter.flutter-gradle-plugin'
+}
+
+android {
+    namespace = "com.nova.cvapp" // ✅ Match your new Firebase project
+    compileSdk = flutter.compileSdkVersion
+    ndkVersion = flutter.ndkVersion
+
+    defaultConfig {
+        applicationId "com.nova.cvapp" // ✅ Match new Firebase
+        minSdk = flutter.minSdkVersion  // Usually 21
+        targetSdk = flutter.targetSdkVersion
+        versionCode = flutter.versionCode
+        versionName = flutter.versionName
+    }
+
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_1_8
+        targetCompatibility = JavaVersion.VERSION_1_8
+    }
+
+    kotlinOptions {
+        jvmTarget = JavaVersion.VERSION_1_8
+    }
+
+    buildTypes {
+        release {
+            signingConfig = signingConfigs.debug
+        }
+    }
+}
+
+flutter {
+    source = "../.."
+}
+
+dependencies {
+    // ✅ Firebase BoM (safe older version)
+    implementation platform('com.google.firebase:firebase-bom:31.1.1')
+
+    // ✅ Firebase SDKs – add only what you use
+    implementation 'com.google.firebase:firebase-analytics'
+    implementation 'com.google.firebase:firebase-auth'
+    implementation 'com.google.firebase:firebase-firestore'
+}
+
+// ✅ Keep this at the bottom
+apply plugin: 'com.google.gms.google-services'
