@@ -61,16 +61,6 @@ Each developer must set up their own Firebase project or reuse the main one. (i 
 
 ---
 
-## 🔐 Firebase Access for Team Members
-
-To share Firebase access:
-
-- Go to Firebase Console → ⚙️ Project Settings → Users and permissions
-- Add each team member's Google email
-- Assign role: **Editor** or **Owner**
-
----
-
 ## 📤 Git Commands to Push & Pull Code
 
 ### ✅ Pull latest changes
@@ -98,58 +88,26 @@ lib/
 ├── routes/
 │   └── app_routes.dart
 ├── services/
-│   ├── auth_service.dart
 │   ├── firestore_service.dart
 │   ├── pdf_service.dart
 │   ├── ai_service.dart
-│   └── voice_service.dart
+│   └── template_service.dart
 ├── utils/
 │   ├── constants.dart
 │   ├── validators.dart
 │   └── helpers.dart
 ├── modules/
 │   ├── auth/
-│   ├── dashboard/
-│   ├── resume_progress/
-│   ├── voice_input/
-│   ├── result/
 │   ├── cv_preview/
-│   ├── download_share_screen.dart
+│   ├── dashboard/
+│   ├── edit_cv/
 │   ├── library/
-│   └── edit_cv/
+│   ├── result/
+│   ├── resume_progress/
+│   └── voice_input/
 └── models/
     └── cv_model.dart
 ```
-
----
-
-## 🧭 App Flow
-
-```
-LoginScreen
-   ↓
-HomeScreen
- ├─ Start New CV → VoiceInputScreen → ResultScreen → PreviewScreen → Download/Share
- ├─ Resume CV → ResumePromptScreen → VoiceInputScreen ...
- └─ My CV Library → LibraryScreen → Preview → Share
-```
-
----
-
-## ✨ Development Tasks (Live Progress)
-
-| Feature                   | Status        |
-| ------------------------- | ------------- |
-| Login w/ Google           | ✅ Complete    |
-| Home Screen Navigation    | ✅ Complete    |
-| Voice Input               | ⏳ Bug fixes   |
-| Firestore Integration     | ⏳ Partial     |
-| Preview & Edit CV         | ✅ Functional  |
-| PDF Generation            | ❌ To build    |
-| Share / Save to Firestore | ❌ To build    |
-| AI Enhancement            | ❌ To build    |
-| Library Screen            | ❌ Needs work  |
-| Full Manual Edit Screen   | ❌ Future step |
 
 ---
 
@@ -171,6 +129,6 @@ Feel free to fork and contribute! Discuss major feature ideas in issues or team 
 ## 📬 Contact
 
 **Project Lead**: [Your Name]  
-📧 Email: your.email@example.com  
+📧 Email: projectcvapp622@gmail.com  
 🔐 Firebase Access: Ask project owner to invite you via email
 
