@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "731270908863",
+    "project_id": "cvapp-project",
+    "storage_bucket": "cvapp-project.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:731270908863:android:be3f2c69df1425a34baf0a",
+        "android_client_info": {
+          "package_name": "com.nova.cvapp"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "731270908863-fnnil8tm533bhmn6o9e49rrpuvgtqdjq.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.nova.cvapp",
+            "certificate_hash": "85c4dc3f6626cb271f81c6d3b6a14971cff598ce"
+          }
+        },
+        {
+          "client_id": "731270908863-5i3vfr8158v5bpdkf22k6p06hctu7llu.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDtMN7rmRZTObe5EWxhvBlM2auz8GI3X1Y"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "731270908863-5i3vfr8158v5bpdkf22k6p06hctu7llu.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
