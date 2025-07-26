@@ -14,7 +14,6 @@ class HomeScreen extends StatelessWidget {
         backgroundColor: Colors.white,
         elevation: 0,
         actions: [
-          // ✅ Profile Icon with Popup Menu (More Professional)
           PopupMenuButton<String>(
             icon: const CircleAvatar(
               radius: 18,
@@ -92,42 +91,31 @@ class HomeScreen extends StatelessWidget {
             ),
             const SizedBox(height: 30),
 
-            // ✅ Tappable Cards
+            // ✅ Tappable Cards (With Bounce + Snackbar)
             _buildActionCard(
               context,
               icon: Icons.create_new_folder,
               title: "Start a New CV",
               description: "Build a fresh CV step by step using voice or text.",
-              onTap: () {
-                Navigator.pushNamed(
-                  context,
-                  AppRoutes.voiceInput,
-                  arguments: {'forceNew': true},
-                );
-              },
+              routeName: AppRoutes.voiceInput,
+              arguments: {'forceNew': true},
             ),
             const SizedBox(height: 16),
-
             _buildActionCard(
               context,
               icon: Icons.play_circle_fill,
               title: "Resume Previous CV",
               description: "Continue where you left off and complete your CV.",
-              onTap: () {
-                Navigator.pushNamed(context, AppRoutes.resumePrompt);
-              },
+              routeName: AppRoutes.resumePrompt,
             ),
             const SizedBox(height: 16),
-
             _buildActionCard(
               context,
               icon: Icons.library_books,
               title: "My CV Library",
               description:
               "View, edit or download all your previously created CVs.",
-              onTap: () {
-                Navigator.pushNamed(context, AppRoutes.library);
-              },
+              routeName: AppRoutes.library,
             ),
           ],
         ),
@@ -135,58 +123,95 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  // ✅ Now the whole card is clickable
+  /// ✅ Tappable Card with Bounce + Snackbar on Navigation Failure
   Widget _buildActionCard(
       BuildContext context, {
         required IconData icon,
         required String title,
         required String description,
-        required VoidCallback onTap,
+        required String routeName,
+        Map<String, dynamic>? arguments,
       }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
-      child: Card(
-        elevation: 4,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.blue.withOpacity(0.1),
-                  shape: BoxShape.circle,
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 1, end: 1),
+      duration: const Duration(milliseconds: 200),
+      builder: (context, scale, child) {
+        return GestureDetector(
+          onTapDown: (_) {
+            // Shrink on press (bounce start)
+            (context as Element).markNeedsBuild();
+          },
+          onTapCancel: () {
+            // Restore if cancelled
+            (context as Element).markNeedsBuild();
+          },
+          onTap: () async {
+            try {
+              await Navigator.pushNamed(context, routeName, arguments: arguments);
+            } catch (e) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text("This feature is not available yet. Please try later."),
+                  backgroundColor: Colors.redAccent,
+                  behavior: SnackBarBehavior.floating,
                 ),
-                child: Icon(icon, size: 32, color: Colors.blue),
+              );
+            }
+
+          },
+          child: AnimatedScale(
+            scale: scale,
+            duration: const Duration(milliseconds: 150),
+            curve: Curves.easeOutBack, // Bounce-like feel
+            child: Card(
+              elevation: 4,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
               ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      title,
-                      style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black87),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.blue.withOpacity(0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(icon, size: 32, color: Colors.blue),
                     ),
-                    const SizedBox(height: 6),
-                    Text(
-                      description,
-                      style:
-                      const TextStyle(fontSize: 14, color: Colors.black54),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            title,
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black87,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            description,
+                            style: const TextStyle(
+                              fontSize: 14,
+                              color: Colors.black54,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),
               ),
-            ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
