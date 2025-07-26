@@ -32,7 +32,7 @@ build/
 **/ios/Flutter/.last_build_id
 
 # Firebase (optional: ignore if you don’t want to push config)
-firebase_options.dart
+#firebase_options.dart
 
 # Symbolication related
 app.*.symbols
@@ -48,7 +48,7 @@ android/app/debug/
 android/app/profile/
 android/app/release/
 android/local.properties
-android/app/google-services.json
+#android/app/google-services.json
 
 
 # macOS/iOS (if building iOS/macOS apps)
