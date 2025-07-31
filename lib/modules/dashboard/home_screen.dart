@@ -7,11 +7,11 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF3F6FA),
+      backgroundColor: Colors.white, // ✅ Body color
       appBar: AppBar(
-        title: const Text('Welcome Back!'),
+        title: const Text('Home'),
         centerTitle: true,
-        backgroundColor: Colors.white,
+        backgroundColor: const Color(0xFFE8F3F8), // ✅ Head color
         elevation: 0,
         actions: [
           PopupMenuButton<String>(
@@ -164,7 +164,8 @@ class HomeScreen extends StatelessWidget {
             duration: const Duration(milliseconds: 150),
             curve: Curves.easeOutBack, // Bounce-like feel
             child: Card(
-              elevation: 4,
+              color: const Color(0xFFF5FAFC), // ✅ Very light subtle blue
+              elevation: 2, // ✅ Soft shadow
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
               ),
@@ -176,7 +177,7 @@ class HomeScreen extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: Colors.blue.withOpacity(0.1),
+                        color: Colors.blue.withOpacity(0.08), // ✅ Softer tint for icon bg
                         shape: BoxShape.circle,
                       ),
                       child: Icon(icon, size: 32, color: Colors.blue),
@@ -209,6 +210,7 @@ class HomeScreen extends StatelessWidget {
                 ),
               ),
             ),
+
           ),
         );
       },
