@@ -44,7 +44,7 @@ class VoiceInputController extends ChangeNotifier {
         'key': 'contact',
         'required': true,
         'multiple': true,
-        'hint': "Share your phone, email or address. Example: My phone number is 03001234567. "
+        'hint': "Share your phone, email or address. Example: My phone number is 03001234560. "
       },
       {
         'title': 'Education',
