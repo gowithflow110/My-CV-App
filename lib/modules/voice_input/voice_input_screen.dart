@@ -327,7 +327,7 @@ class _VoiceInputScreenState extends State<VoiceInputScreen> {
                             if (result == "completed") {
                               Navigator.pushNamed(
                                 context,
-                                AppRoutes.result,
+                                AppRoutes.summary,
                                 arguments: {
                                   "cvData": controller.userData,
                                   "totalSections": controller.sections.length,
