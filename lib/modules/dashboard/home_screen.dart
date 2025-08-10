@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../routes/app_routes.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -217,13 +218,20 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  void _logout(BuildContext context) {
-    try {
-      Navigator.pushReplacementNamed(context, AppRoutes.login);
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Logout failed")),
+  Future<void> _logout(BuildContext context) async {
+  try {
+    await FirebaseAuth.instance.signOut(); // ✅ Wait for sign-out
+    if (context.mounted) {
+      Navigator.of(context).pushNamedAndRemoveUntil(
+        AppRoutes.login, // ✅ Use your defined login route
+        (route) => false,
       );
     }
+  } catch (e) {
+    print("Error during logout: $e");
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Logout failed. Please try again.')),
+    );
   }
+}
 }
