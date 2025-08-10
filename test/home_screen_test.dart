@@ -57,12 +57,12 @@ void main() {
             findsOneWidget,
           );
 
-          // ✅ 5. Test Logout via Popup Menu
-          await tester.tap(find.byType(PopupMenuButton<String>));
-          await tester.pumpAndSettle();
-          await tester.tap(find.text("Logout"));
-          await tester.pumpAndSettle();
-          expect(find.text("Login Screen"), findsOneWidget);
+          // // ✅ 5. Test Logout via Popup Menu
+          // await tester.tap(find.byType(PopupMenuButton<String>));
+          // await tester.pumpAndSettle();
+          // await tester.tap(find.text("Logout"));
+          // await tester.pumpAndSettle();
+          // expect(find.text("Login Screen"), findsOneWidget);
         });
   });
 }

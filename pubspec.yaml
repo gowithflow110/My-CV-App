@@ -41,7 +41,7 @@ flutter:
   uses-material-design: true
 
   assets:
-    - assets/logo.jpg
+#    - assets/logo.jpg
     - assets/google_icon.png
     - assets/lottie/ai_processing.json
     - assets/google_logo.png       # ✅ Required by Bilal's sign-in button
