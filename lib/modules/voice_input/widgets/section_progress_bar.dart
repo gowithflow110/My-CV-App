@@ -1,3 +1,5 @@
+//section_progress_bar.dart
+
 import 'package:flutter/material.dart';
 
 class SectionProgressBar extends StatelessWidget {

@@ -1,3 +1,5 @@
+//app_routes.dart
+
 class AppRoutes {
   // ----------------- Authentication -----------------
   static const login = '/login';                 // 👤 Sign-in screen

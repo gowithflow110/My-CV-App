@@ -1,3 +1,5 @@
+//live_text_display.dart
+
 import 'package:flutter/material.dart';
 
 class LiveTextDisplay extends StatelessWidget {

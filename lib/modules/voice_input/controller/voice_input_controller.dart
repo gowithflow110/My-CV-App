@@ -1,3 +1,5 @@
+//voice_input_controller.dart
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
@@ -31,76 +33,78 @@ class VoiceInputController extends ChangeNotifier {
   }
 
   void _initSections() {
-    sections = [
-      {
-        'title': 'Full Name',
-        'key': 'name',
-        'required': true,
-        'multiple': false,
-        'hint': "What's your full name? Example: My name is Ali Ahmed."
-      },
-      {
-        'title': 'Contact Info',
-        'key': 'contact',
-        'required': true,
-        'multiple': true,
-        'hint': "Share your phone, email or address. Example: My phone number is 03001234560. "
-      },
-      {
-        'title': 'Education',
-        'key': 'education',
-        'required': true,
-        'multiple': true,
-        'hint': "Mention your education. Example: I completed my Bachelor's from Punjab University in 2022."
-      },
-      {
-        'title': 'Work Experience',
-        'key': 'experience',
-        'required': true,
-        'multiple': true,
-        'hint': "Talk about your job experience. Example: I worked as a sales man at Metro Store for 2 years."
-      },
-      {
-        'title': 'Skills',
-        'key': 'skills',
-        'required': true,
-        'multiple': true,
-        'hint': "List your skills. Example: I am good at communication, teamwork, and using MS Office."
-      },
-      {
-        'title': 'Projects',
-        'key': 'projects',
-        'required': false,
-        'multiple': true,
-        'hint': "Mention a project you’ve done. Example: I helped set up a billing system at my last job."
-      },
-      {
-        'title': 'Certifications',
-        'key': 'certifications',
-        'required': false,
-        'multiple': true,
-        'hint': "Say a certificate you earned. Example: I completed a course in Office Management from ABC Institute."
-      },
-      {
-        'title': 'Languages',
-        'key': 'languages',
-        'required': false,
-        'multiple': true,
-        'hint': "Which languages do you speak? Example: I can speak English, Urdu, and Punjabi."
-      },
-      {
-        'title': 'Professional Summary',
-        'key': 'summary',
-        'required': false,
-        'multiple': false,
-        'hint': "Briefly describe yourself. Example: I am a hardworking individual with strong communication skills and a passion for learning."
-      },
-    ];
+  sections = [
+    {
+      'title': 'Full Name',
+      'key': 'name',
+      'required': true,
+      'multiple': false,
+      'hint': "What's your full name? Example: My name is Ali Ahmed."
+    },
+    {
+      'title': 'Contact Info',
+      'key': 'contact',
+      'required': true,
+      'multiple': true,
+      'hint': "Share your phone, email or address. Example: My phone number is 03001234560."
+    },
+    {
+      'title': 'Education',
+      'key': 'education',
+      'required': true,
+      'multiple': true,
+      'hint': "Mention your education. Example: I completed my Bachelor's from Punjab University in 2022."
+    },
+    {
+      'title': 'Skills',
+      'key': 'skills',
+      'required': true,
+      'multiple': true,
+      'hint': "List your skills. Example: I am good at communication, teamwork, and using MS Office."
+    },
+    {
+      'title': 'Languages',
+      'key': 'languages',
+      'required': true, // ✅ Changed to required
+      'multiple': true,
+      'hint': "Which languages do you speak? Example: I can speak English, Urdu, and Punjabi."
+    },
+    {
+      'title': 'Certifications',
+      'key': 'certifications',
+      'required': false,
+      'multiple': true,
+      'hint': "Say a certificate you earned. Example: I completed a course in Office Management from ABC Institute."
+    },
+    {
+      'title': 'Work Experience',
+      'key': 'experience',
+      'required': false, // ✅ Changed to optional
+      'multiple': true,
+      'hint': "Talk about your job experience. Example: I worked as a sales man at Metro Store for 2 years."
+    },
+    {
+      'title': 'Projects',
+      'key': 'projects',
+      'required': false,
+      'multiple': true,
+      'hint': "Mention a project you’ve done. Example: I helped set up a billing system at my last job."
+    },
+    {
+      'title': 'Professional Summary',
+      'key': 'summary',
+      'required': false,
+      'multiple': false,
+      'hint': "Briefly describe yourself. Example: I am a hardworking individual with strong communication skills and a passion for learning."
+    },
+  ];
 
-    for (var section in sections) {
-      userData[section['key']] = section['multiple'] ? <String>[] : '';
-    }
+  // Initialize userData
+  for (var section in sections) {
+    userData[section['key']] = section['multiple'] ? <String>[] : '';
   }
+}
+
 
   /// ======================
   /// ✅ SPEECH FUNCTIONS

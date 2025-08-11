@@ -1,3 +1,5 @@
+//summary_screen.dart
+
 import 'package:flutter/material.dart';
 import '../../routes/app_routes.dart';
 
@@ -17,11 +19,11 @@ class SummaryScreen extends StatelessWidget {
       'name',
       'contact',
       'education',
-      'experience',
       'skills',
-      'projects',
-      'certifications',
       'languages',
+      'certifications',
+      'experience',
+      'projects',
       'summary',
     ];
 
