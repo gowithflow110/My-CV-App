@@ -12,10 +12,10 @@ import 'modules/dashboard/home_screen.dart';
 import 'modules/resume_progress/resume_prompt_screen.dart';
 import 'modules/voice_input/voice_input_screen.dart';
 import 'modules/summary/summary_screen.dart';
-import 'modules/ai_animation/ai_processing_screen.dart';
-import 'modules/cv_preview/preview_screen.dart';
-import 'modules/library/library_screen.dart';
-import 'modules/edit_cv/edit_cv_screen.dart';
+// import 'modules/ai_animation/ai_processing_screen.dart';
+// import 'modules/cv_preview/preview_screen.dart';
+// import 'modules/library/library_screen.dart';
+// import 'modules/edit_cv/edit_cv_screen.dart';
 
 // Routes
 import 'routes/app_routes.dart';
