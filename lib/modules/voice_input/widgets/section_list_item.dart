@@ -1,4 +1,4 @@
-//section_list_item.dart
+// lib/modules/voice_input/widgets/section_list_item.dart
 
 import 'package:flutter/material.dart';
 

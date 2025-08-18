@@ -1,7 +1,8 @@
-//firestore_service.dart
+// lib/services/firestore_service.dart
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
+import '../models/cv_model.dart'; // Adjust path if needed
 
 class FirestoreService {
   FirebaseFirestore _firestore;
@@ -14,6 +15,10 @@ class FirestoreService {
   void overrideWithMock(FirebaseFirestore mockInstance) {
     _firestore = mockInstance;
   }
+
+  // ---------------------------------------------------------
+  // 🗂 SINGLE CURRENT CV LOGIC (Existing)
+  // ---------------------------------------------------------
 
   /// ✅ Get the last saved (incomplete) CV for the user
   Future<Map<String, dynamic>?> getLastCV(String userId) async {
@@ -105,6 +110,76 @@ class FirestoreService {
       debugPrint("✅ Last CV cleared successfully.");
     } catch (e) {
       debugPrint('❌ Error clearing last CV: $e');
+    }
+  }
+
+  // ---------------------------------------------------------
+  // 📚 LIBRARY CV LOGIC (New for AI-enhanced saved CVs)
+  // ---------------------------------------------------------
+
+  /// Save a final CV to the Library with optional custom name
+  Future<void> saveCVToLibrary(String userId, CVModel cv,
+      {String? customName}) async {
+    try {
+      if (userId.isEmpty) return;
+
+      final libraryRef = _firestore
+          .collection('users')
+          .doc(userId)
+          .collection('libraryCVs_clean'); // consistent collection
+
+      // Use the same cvId if exists, else generate new
+      final docId = cv.cvId.isNotEmpty
+          ? cv.cvId
+          : "cv_${DateTime.now().millisecondsSinceEpoch}";
+
+      final dataToSave = cv.copyWith(cvId: docId).toMap()
+        ..['name'] = customName ?? "My CV"
+        ..['createdAt'] =
+            FieldValue.serverTimestamp(); // ✅ ensure ordering works
+
+      await libraryRef.doc(docId).set(dataToSave);
+
+      debugPrint(
+          "✅ CV saved to Library: $docId (name: ${customName ?? "My CV"})");
+    } catch (e) {
+      debugPrint('❌ Error saving CV to Library: $e');
+    }
+  }
+
+  /// Fetch all CVs from the Library
+  Future<List<CVModel>> getLibraryCVs(String userId) async {
+    try {
+      if (userId.isEmpty) return [];
+      final querySnapshot = await _firestore
+          .collection('users')
+          .doc(userId)
+          .collection('libraryCVs')
+          .orderBy('createdAt', descending: true)
+          .get();
+
+      return querySnapshot.docs
+          .map((doc) => CVModel.fromFirestore(doc))
+          .toList();
+    } catch (e) {
+      debugPrint('❌ Error fetching Library CVs: $e');
+      return [];
+    }
+  }
+
+  /// Delete a CV from the Library
+  Future<void> deleteCVFromLibrary(String userId, String cvId) async {
+    try {
+      if (userId.isEmpty || cvId.isEmpty) return;
+      await _firestore
+          .collection('users')
+          .doc(userId)
+          .collection('libraryCVs')
+          .doc(cvId)
+          .delete();
+      debugPrint("✅ CV deleted from Library: $cvId");
+    } catch (e) {
+      debugPrint('❌ Error deleting CV from Library: $e');
     }
   }
 }

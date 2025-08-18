@@ -1,0 +1,11 @@
+Flutter 3.24.5
+Dart: 3.5.4
+Android Gradle Plugin: 8.1.0          classpath 'com.android.tools.build:gradle:8.1.0'
+Google Services Plugin → 4.4.3	      classpath 'com.google.gms:google-services:4.4.3'
+Gradle version: 8.1                   distributionUrl=https\://services.gradle.org/distributions/gradle-8.1-all.zip
+java version: 17.0.12   OR  Java JDK → 17 
+Kotlin JVM Target → 1.8		      jvmTarget = JavaVersion.VERSION_1_8
+Android SDK version 35.0.0
+minSdkVersion → 21
+
+

@@ -1,4 +1,4 @@
-// mic_button.dart
+// lib/modules/voice_input/widgets/mic_button.dart
 
 import 'package:flutter/material.dart';
 

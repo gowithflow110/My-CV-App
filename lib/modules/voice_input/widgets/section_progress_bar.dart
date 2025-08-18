@@ -1,4 +1,4 @@
-//section_progress_bar.dart
+// lib/modules/voice_input/widgets/section_progress_bar.dart
 
 import 'package:flutter/material.dart';
 

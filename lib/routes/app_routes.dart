@@ -1,4 +1,4 @@
-//app_routes.dart
+//lib/routes/app_routes.dart
 
 class AppRoutes {
   // ----------------- Authentication -----------------

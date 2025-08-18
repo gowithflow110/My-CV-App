@@ -26,6 +26,14 @@ dependencies:
   path_provider: ^2.1.1
   connectivity_plus: 6.1.4
   shared_preferences: ^2.0.15
+  flutter_dotenv: ^5.2.1
+  pdf: ^3.11.3
+  intl: ^0.19.0
+  open_filex: ^4.4.0
+  share_plus: ^8.0.0
+
+  
+  
 
 dev_dependencies:
   flutter_test:
@@ -46,3 +54,5 @@ flutter:
     - assets/lottie/ai_processing.json
     - assets/google_logo.png       # ✅ Required by Bilal's sign-in button
     - assets/cv_illustration.png   # ✅ Required by Bilal's sign-in screen
+    - .env
+    - assets/fonts/MaterialIcons-Regular.ttf

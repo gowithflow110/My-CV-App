@@ -1,4 +1,4 @@
-// sign_in_screen.dart
+// lib/modules/auth/screens/sign_in_screen.dart
 
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';

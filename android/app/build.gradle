@@ -12,7 +12,7 @@ android {
 
     defaultConfig {
         applicationId "com.nova.cvapp" // ✅ Match new Firebase
-        minSdk = flutter.minSdkVersion  // Usually 21
+        minSdk = flutter.minSdkVersion  
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName

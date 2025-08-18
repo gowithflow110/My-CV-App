@@ -1,12 +1,11 @@
-//voice_input_controller.dart
+// lib/modules/voice_input/controller/voice_input_controller.dart
 
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../../services/firestore_service.dart';
-import 'dart:io';
-
 
 class VoiceInputController extends ChangeNotifier {
   final FirestoreService _firestoreService = FirestoreService();
@@ -24,8 +23,24 @@ class VoiceInputController extends ChangeNotifier {
   int currentIndex = 0;
   Map<String, dynamic> userData = {};
 
-  // ✅ SCRUM-81: Mic Fallback Logic
   bool micFailed = false;
+
+  // New: Manual input toggle
+  bool _isManualInput = false;
+  bool get isManualInput => _isManualInput;
+  set isManualInput(bool val) {
+    if (_isManualInput != val) {
+      _isManualInput = val;
+      if (_isManualInput) {
+        // If switching to manual input, stop listening immediately
+        stopListening();
+      } else {
+        // Switching back to voice input, clear transcription so speech recognizer can start fresh
+        transcription = '';
+      }
+      notifyListeners();
+    }
+  }
 
   VoiceInputController() {
     userId = FirebaseAuth.instance.currentUser?.uid ?? '';
@@ -33,83 +48,79 @@ class VoiceInputController extends ChangeNotifier {
   }
 
   void _initSections() {
-  sections = [
-    {
-      'title': 'Full Name',
-      'key': 'name',
-      'required': true,
-      'multiple': false,
-      'hint': "What's your full name? Example: My name is Ali Ahmed."
-    },
-    {
-      'title': 'Contact Info',
-      'key': 'contact',
-      'required': true,
-      'multiple': true,
-      'hint': "Share your phone, email or address. Example: My phone number is 03001234560."
-    },
-    {
-      'title': 'Education',
-      'key': 'education',
-      'required': true,
-      'multiple': true,
-      'hint': "Mention your education. Example: I completed my Bachelor's from Punjab University in 2022."
-    },
-    {
-      'title': 'Skills',
-      'key': 'skills',
-      'required': true,
-      'multiple': true,
-      'hint': "List your skills. Example: I am good at communication, teamwork, and using MS Office."
-    },
-    {
-      'title': 'Languages',
-      'key': 'languages',
-      'required': true, // ✅ Changed to required
-      'multiple': true,
-      'hint': "Which languages do you speak? Example: I can speak English, Urdu, and Punjabi."
-    },
-    {
-      'title': 'Certifications',
-      'key': 'certifications',
-      'required': false,
-      'multiple': true,
-      'hint': "Say a certificate you earned. Example: I completed a course in Office Management from ABC Institute."
-    },
-    {
-      'title': 'Work Experience',
-      'key': 'experience',
-      'required': false, // ✅ Changed to optional
-      'multiple': true,
-      'hint': "Talk about your job experience. Example: I worked as a sales man at Metro Store for 2 years."
-    },
-    {
-      'title': 'Projects',
-      'key': 'projects',
-      'required': false,
-      'multiple': true,
-      'hint': "Mention a project you’ve done. Example: I helped set up a billing system at my last job."
-    },
-    {
-      'title': 'Professional Summary',
-      'key': 'summary',
-      'required': false,
-      'multiple': false,
-      'hint': "Briefly describe yourself. Example: I am a hardworking individual with strong communication skills and a passion for learning."
-    },
-  ];
+    sections = [
+      {
+        'title': 'Full Name',
+        'key': 'name',
+        'required': true,
+        'multiple': false,
+        'hint': "What's your full name? Example: My name is Ali Ahmed."
+      },
+      {
+        'title': 'Contact Info',
+        'key': 'contact',
+        'required': true,
+        'multiple': true,
+        'hint': "Share your phone, email or address. Example: My phone number is 03001234560."
+      },
+      {
+        'title': 'Education',
+        'key': 'education',
+        'required': true,
+        'multiple': true,
+        'hint': "Mention your education. Example: I completed my Bachelor's from Punjab University in 2022."
+      },
+      {
+        'title': 'Skills',
+        'key': 'skills',
+        'required': true,
+        'multiple': true,
+        'hint': "List your skills. Example: I am good at communication, teamwork, and using MS Office."
+      },
+      {
+        'title': 'Languages',
+        'key': 'languages',
+        'required': true,
+        'multiple': true,
+        'hint': "Which languages do you speak? Example: I can speak English, Urdu, and Punjabi."
+      },
+      {
+        'title': 'Certifications',
+        'key': 'certifications',
+        'required': false,
+        'multiple': true,
+        'hint': "Say a certificate you earned. Example: I completed a course in Office Management from ABC Institute."
+      },
+      {
+        'title': 'Work Experience',
+        'key': 'experience',
+        'required': false,
+        'multiple': true,
+        'hint': "Talk about your job experience. Example: I worked as a salesman at Metro Store for 2 years."
+      },
+      {
+        'title': 'Projects',
+        'key': 'projects',
+        'required': false,
+        'multiple': true,
+        'hint': "Mention a project you’ve done. Example: I helped set up a billing system at my last job."
+      },
+      {
+        'title': 'Professional Summary',
+        'key': 'summary',
+        'required': false,
+        'multiple': false,
+        'hint': "Briefly describe yourself. Example: I am a hardworking individual with strong communication skills and a passion for learning."
+      },
+    ];
 
-  // Initialize userData
-  for (var section in sections) {
-    userData[section['key']] = section['multiple'] ? <String>[] : '';
+    // Initialize userData with empty values or lists according to 'multiple'
+    for (var section in sections) {
+      userData[section['key']] = section['multiple'] ? <String>[] : '';
+    }
   }
-}
 
-
-  /// ======================
-  /// ✅ SPEECH FUNCTIONS
-  /// ======================
-
+  /// Initialize speech recognizer and handle mic availability
   Future<void> initializeSpeech() async {
     if (_speech.isListening) {
       await _speech.stop();
@@ -122,7 +133,6 @@ class VoiceInputController extends ChangeNotifier {
     try {
       available = await _speech.initialize(
         onStatus: (status) {
-          debugPrint("Speech Status: $status");
           if (status == 'done' || status == 'notListening') {
             if (isListening) {
               isListening = false;
@@ -131,12 +141,12 @@ class VoiceInputController extends ChangeNotifier {
           }
         },
         onError: (error) {
-          debugPrint("Speech Error: $error");
           stopListening();
+          micFailed = true;
+          notifyListeners();
         },
       );
     } catch (e) {
-      debugPrint("❌ Exception during mic init: $e");
       micFailed = true;
       notifyListeners();
       return;
@@ -145,33 +155,38 @@ class VoiceInputController extends ChangeNotifier {
     isListening = false;
 
     if (!available) {
-      debugPrint("⚠️ Speech recognition not available");
       micFailed = true;
     }
 
     notifyListeners();
   }
 
+  /// Resets speech recognition and optionally clears transcription text
   Future<void> resetSpeech({bool clearTranscription = true}) async {
     if (_speech.isListening) {
       await _speech.stop();
     }
     await _speech.cancel();
+
     isListening = false;
 
-    if (clearTranscription) {
+    if (clearTranscription && !_isManualInput) {
       transcription = '';
     }
-
-    micFailed = false; // Reset fallback state when retrying
+    micFailed = false;
     notifyListeners();
   }
 
+  /// Starts listening to speech and updates transcription in real time
   Future<void> startListening(BuildContext context) async {
+    if (_isManualInput) {
+      // If manual input mode is on, do not start listening
+      return;
+    }
+
     if (!await hasInternet()) {
       micFailed = true;
       notifyListeners();
-      debugPrint("📴 Mic blocked due to no internet");
       return;
     }
 
@@ -181,27 +196,23 @@ class VoiceInputController extends ChangeNotifier {
     }
 
     await initializeSpeech();
-    await Future.delayed(Duration(milliseconds: 100)); // Give a moment for state update
+    await Future.delayed(const Duration(milliseconds: 100));
+
     if (!_speech.isAvailable || micFailed) {
-      debugPrint("🚫 Mic not available, fallback required");
       micFailed = true;
       notifyListeners();
       return;
     }
-
 
     isListening = true;
     transcription = '';
     notifyListeners();
 
     await _speech.listen(
-      onResult: (result) async {
+      onResult: (result) {
         transcription = result.recognizedWords;
         notifyListeners();
-
-
       },
-
       listenFor: const Duration(seconds: 30),
       pauseFor: const Duration(seconds: 5),
       partialResults: true,
@@ -209,7 +220,7 @@ class VoiceInputController extends ChangeNotifier {
     );
   }
 
-
+  /// Stops speech listening
   Future<void> stopListening() async {
     if (_speech.isListening) {
       await _speech.stop();
@@ -219,10 +230,7 @@ class VoiceInputController extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// ======================
-  /// ✅ CV DATA FUNCTIONS
-  /// ======================
-
+  /// Loads CV data: fresh, resumed or edit mode
   Future<void> loadCVData({Map<String, dynamic>? args}) async {
     await resetSpeech();
     isLoading = true;
@@ -263,10 +271,7 @@ class VoiceInputController extends ChangeNotifier {
       }
 
       final lastCV = await _firestoreService.getLastCV(userId);
-
-      if (lastCV != null &&
-          lastCV['cvData'] != null &&
-          (lastCV['cvData'] as Map).isNotEmpty) {
+      if (lastCV != null && lastCV['cvData'] != null && (lastCV['cvData'] as Map).isNotEmpty) {
         isResumed = true;
         cvId = lastCV['cvId'];
         final savedData = Map<String, dynamic>.from(lastCV['cvData']);
@@ -277,17 +282,16 @@ class VoiceInputController extends ChangeNotifier {
               : savedData[key] ?? '';
         }
         jumpToFirstIncomplete();
-      } else {
-        debugPrint("⚠ No valid last CV found, starting fresh.");
       }
     } catch (e) {
-      debugPrint("❌ Error loading CV data: $e");
+      debugPrint("Error loading CV data: $e");
     } finally {
       isLoading = false;
       notifyListeners();
     }
   }
 
+  /// Moves currentIndex to the first incomplete section
   void jumpToFirstIncomplete() {
     currentIndex = 0;
     for (int i = 0; i < sections.length; i++) {
@@ -308,6 +312,7 @@ class VoiceInputController extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Adds current transcription to the list for multiple entries
   void addToMultipleList(String key) {
     if (transcription.trim().isNotEmpty) {
       (userData[key] as List<String>).add(transcription.trim());
@@ -316,25 +321,27 @@ class VoiceInputController extends ChangeNotifier {
     }
   }
 
+  /// Edits an entry: sets transcription to existing entry, removes from list, starts listening again
   void editEntry(BuildContext context, String key, int index) {
     transcription = (userData[key] as List<String>)[index];
     (userData[key] as List<String>).removeAt(index);
     notifyListeners();
-    startListening(context); // ✅ pass context here
+    startListening(context);
   }
 
+  /// Deletes an entry from a multiple list
   void deleteEntry(String key, int index) {
     (userData[key] as List<String>).removeAt(index);
     notifyListeners();
   }
 
+  /// Proceeds to next section or completes the CV
   Future<String?> nextSection(BuildContext context) async {
-    // ✅ 1. Check internet FIRST before any UI change
     final isConnected = await hasInternet();
     if (!isConnected) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text("📡 No internet connection. Please reconnect to continue."),
+          content: Text("No internet connection. Please reconnect to continue."),
           duration: Duration(seconds: 3),
         ),
       );
@@ -356,7 +363,6 @@ class VoiceInputController extends ChangeNotifier {
     final required = section['required'];
     final multiple = section['multiple'];
 
-    // ✅ Add input to userData
     if (transcription.trim().isNotEmpty) {
       if (multiple) {
         (userData[key] as List<String>).add(transcription.trim());
@@ -382,23 +388,17 @@ class VoiceInputController extends ChangeNotifier {
               Expanded(
                 child: Text(
                   "This field is required.",
-                  style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 16,
-                    color: Colors.white,
-                  ),
+                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16, color: Colors.white),
                 ),
               ),
             ],
           ),
         ),
       );
-
       return null;
     }
 
     try {
-      // ✅ Only now, if everything is okay, show loading animation
       isLoading = true;
       notifyListeners();
 
@@ -410,7 +410,6 @@ class VoiceInputController extends ChangeNotifier {
         transcription = sections[currentIndex]['multiple']
             ? ''
             : (userData[nextKey]?.toString() ?? '');
-
         await resetSpeech(clearTranscription: false);
         return null;
       } else {
@@ -421,11 +420,11 @@ class VoiceInputController extends ChangeNotifier {
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text("❌ Error saving CV: $e"),
+          content: Text("Error saving CV: $e"),
           duration: const Duration(seconds: 3),
         ),
       );
-      debugPrint("🛑 Error in nextSection(): $e");
+      debugPrint("Error in nextSection(): $e");
       return null;
     } finally {
       isLoading = false;
@@ -433,9 +432,7 @@ class VoiceInputController extends ChangeNotifier {
     }
   }
 
-
-
-
+  /// Goes back to previous section
   void backSection() {
     final section = sections[currentIndex];
     final key = section['key'];
@@ -455,12 +452,15 @@ class VoiceInputController extends ChangeNotifier {
     }
   }
 
+  /// Dispose controller properly
   void disposeController() {
     resetSpeech();
   }
-  // ✅ Used by UI to check mic status
+
+  /// Returns mic status for UI
   bool get isSpeechAvailable => !micFailed;
 
+  /// Checks internet connectivity
   Future<bool> hasInternet() async {
     try {
       final result = await InternetAddress.lookup('google.com');
@@ -470,4 +470,8 @@ class VoiceInputController extends ChangeNotifier {
     }
   }
 
+  Future<void> saveCurrentData() async {
+  if (userId.isEmpty) throw Exception("User not logged in");
+  await _firestoreService.saveSection(userId, cvId, userData);
+}
 }

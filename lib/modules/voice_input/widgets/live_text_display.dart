@@ -1,4 +1,4 @@
-//live_text_display.dart
+// lib/modules/voice_input/widgets/live_text_display.dart
 
 import 'package:flutter/material.dart';
 
