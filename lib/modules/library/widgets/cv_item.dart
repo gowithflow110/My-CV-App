@@ -30,7 +30,7 @@ class CVItem extends StatelessWidget {
               onChanged: onSelectChanged,
             )
           : null, // hide checkbox when not in selection mode
-      title: Text(cv.cvData['header']?['name'] ?? "Untitled CV"),
+      title: Text(cv.cvData['name'] ?? cv.cvData['header']?['name'] ?? "Untitled CV"),
       subtitle: Text(
         '${cv.createdAt.day}-${cv.createdAt.month}-${cv.createdAt.year}',
         style: const TextStyle(fontSize: 12),

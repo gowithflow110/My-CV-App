@@ -133,10 +133,17 @@ class FirestoreService {
           ? cv.cvId
           : "cv_${DateTime.now().millisecondsSinceEpoch}";
 
-      final dataToSave = cv.copyWith(cvId: docId).toMap()
-        ..['name'] = customName ?? "My CV"
-        ..['createdAt'] =
-            FieldValue.serverTimestamp(); // ✅ ensure ordering works
+      // Ensure the name is stored inside cvData
+      final updatedCvData = Map<String, dynamic>.from(cv.cvData)
+        ..['name'] = customName ?? "My CV";
+
+      final dataToSave = cv
+          .copyWith(
+            cvId: docId,
+            cvData: updatedCvData,
+          )
+          .toMap()
+        ..['createdAt'] = FieldValue.serverTimestamp();
 
       await libraryRef.doc(docId).set(dataToSave);
 
