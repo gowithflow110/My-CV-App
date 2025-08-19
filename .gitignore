@@ -69,3 +69,6 @@ windows/flutter/ephemeral/
 
 # Web
 web/.dart_tool/
+
+# .env Remove
+.env
