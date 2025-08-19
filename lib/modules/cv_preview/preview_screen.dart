@@ -37,14 +37,24 @@ class PreviewScreen extends StatelessWidget {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text(
-                          "✅ CV saved to Downloads/${file.uri.pathSegments.last}",
+                          "CV saved to Downloads/${file.uri.pathSegments.last}",
+                          style: const TextStyle(
+                              color: Colors.white, fontSize: 14),
                         ),
-                        backgroundColor: Colors.green,
+                        backgroundColor: Colors
+                            .blue.shade700, // darker blue for better contrast
                         duration: const Duration(seconds: 4),
                         action: SnackBarAction(
-                          label: "Open",
-                          textColor: Colors.white,
+                          label: "OPEN",
+                          textColor:
+                              Colors.amberAccent, // bright, high contrast
                           onPressed: () => OpenFilex.open(file.path),
+                        ),
+                        behavior: SnackBarBehavior
+                            .floating, // makes it more modern and elevated
+                        shape: RoundedRectangleBorder(
+                          borderRadius:
+                              BorderRadius.circular(12), // rounded corners
                         ),
                       ),
                     );
@@ -179,8 +189,12 @@ class PreviewScreen extends StatelessWidget {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text("✅ '$filename' saved to Library"),
-            backgroundColor: Colors.blue,
+            content: Text(
+              "'$filename' saved to Library",
+              style: const TextStyle(color: Colors.white),
+            ),
+            backgroundColor: Colors.blue, // same as download
+            duration: const Duration(seconds: 4),
           ),
         );
       }

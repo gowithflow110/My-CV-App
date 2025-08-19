@@ -16,8 +16,33 @@ class TemplateDefault {
   List<pw.Widget> buildSections() {
     final sections = getOrderedSections();
 
+    // Filter optional sections if they have no data
+    final filteredSections = sections.where((section) {
+      final type = section['type'];
+      final data = section['data'];
+
+      // Required sections (always keep)
+      const required = [
+        'header',
+        'contact',
+        'skills',
+        'education',
+        'languages'
+      ];
+      if (required.contains(type)) return true;
+
+      // Exception: summary is part of header, already required
+
+      // Optional sections: only keep if data is non-empty
+      if (type == 'experience' && (data as List).isEmpty) return false;
+      if (type == 'projects' && (data as List).isEmpty) return false;
+      if (type == 'certifications' && (data as List).isEmpty) return false;
+
+      return true; // any other sections (unlikely)
+    }).toList();
+
     return [
-      for (final section in sections) _buildPdfSection(section),
+      for (final section in filteredSections) _buildPdfSection(section),
     ];
   }
 

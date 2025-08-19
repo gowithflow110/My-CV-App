@@ -76,11 +76,10 @@ class _AIProcessingScreenState extends State<AIProcessingScreen>
         updatedAt: DateTime.now(),
       );
 
-      // Step 6: Save to Firestore
+      // Step 6: Save to Firestore (AI-generated CV)
       final userId = FirebaseAuth.instance.currentUser?.uid ?? '';
       if (userId.isNotEmpty) {
-        await _firestoreService.markCVComplete(userId, updated.cvId);
-        await _firestoreService.saveCVToLibrary(userId, updated);
+        await _firestoreService.saveGeneratedCV(userId, updated);
       }
 
       // Step 7: Navigate to preview
