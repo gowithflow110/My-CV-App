@@ -14,16 +14,24 @@ class PreviewScreen extends StatelessWidget {
 
   dynamic _convertCVSection(dynamic data) {
     if (data is CVSection) {
-      return data; // keep as CVSection, don't call toMap() at top level
-    } else if (data is List) {
-      return data.map((e) => _convertCVSection(e)).toList();
+      // Convert CVSection to a map
+      return {"text": data.text ?? ""};
     } else if (data is Map) {
-      // Ensure keys are String and values are properly converted
-      return data.map<String, dynamic>((k, v) => MapEntry(k.toString(), _convertCVSection(v)));
+      // Recursively convert map values
+      final Map<String, dynamic> result = {};
+      data.forEach((key, value) {
+        result[key.toString()] = _convertCVSection(value);
+      });
+      return result;
+    } else if (data is List) {
+      // Recursively convert list items
+      return data.map((e) => _convertCVSection(e)).toList();
     } else {
-      return data; // primitive types remain unchanged
+      // Convert primitive values to string
+      return data?.toString() ?? '';
     }
   }
+
 
 
   @override
@@ -33,19 +41,24 @@ class PreviewScreen extends StatelessWidget {
 
     dynamic _convertCVSection(dynamic data) {
       if (data is CVSection) {
-        return data.toMap();
+        // Flatten CVSection into a string
+        return data.text;
       } else if (data is List) {
-        return data.map((e) => _convertCVSection(e)).toList();
+        // Recursively convert list elements to strings
+        return data.map((e) => _convertCVSection(e).toString()).toList();
       } else if (data is Map) {
+        // Recursively convert map values to strings
         final Map<String, dynamic> result = {};
         data.forEach((key, value) {
-          result[key.toString()] = _convertCVSection(value);
+          result[key.toString()] = _convertCVSection(value).toString();
         });
         return result;
       } else {
-        return data;
+        // Fallback to string
+        return data?.toString() ?? '';
       }
     }
+
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -112,14 +125,16 @@ class PreviewScreen extends StatelessWidget {
           final s = sections[index];
           final type = s['type'];
           final rawData = s['data'];
+
+          // Convert CVSection to map/string structure expected by _buildSection
           final data = _convertCVSection(rawData);
 
-          // Pass data as-is, only wrap lists if strictly needed
           return _buildSection(type, data, context);
         },
       ),
     );
   }
+
 
 
 
@@ -272,6 +287,53 @@ class PreviewScreen extends StatelessWidget {
     }
   }
 
+
+  Widget _buildContact(dynamic data, BuildContext context) {
+    if (data is! Map) return const SizedBox.shrink();
+
+    final items = <Widget>[];
+
+    void addItem(IconData icon, String? value) {
+      if (value != null && value.trim().isNotEmpty) {
+        items.add(
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            margin: const EdgeInsets.only(bottom: 4),
+            decoration: BoxDecoration(
+              color: Colors.black,
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon, size: 16, color: Colors.white),
+                const SizedBox(width: 4),
+                Text(
+                  value,
+                  style: const TextStyle(color: Colors.white, fontSize: 14),
+                ),
+              ],
+            ),
+          ),
+        );
+      }
+    }
+
+    addItem(Icons.email, data['email']);
+    addItem(Icons.phone, data['phone']);
+    addItem(Icons.link, data['website']);
+    addItem(Icons.location_on, data['location']);
+
+    if (items.isEmpty) return const SizedBox.shrink();
+
+    return _sectionBlock("CONTACT", Wrap(spacing: 8, runSpacing: 4, children: items),
+        key: 'contact', context: context);
+  }
+
+
+
+
+
   Widget _buildHeader(Map<String, dynamic> data, BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
@@ -316,275 +378,8 @@ class PreviewScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildContact(Map<String, dynamic> data, BuildContext context) {
-    if (data.isEmpty) return const SizedBox.shrink();
-
-    final items = <Widget>[];
-
-    // Helper to safely add items from the contact map
-    void addItem(IconData icon, String keyName) {
-      final value = data[keyName]?.toString().trim();
-      if (value != null && value.isNotEmpty) {
-        items.add(
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, size: 16, color: Colors.white),
-              const SizedBox(width: 6),
-              Flexible(
-                child: Text(
-                  value,
-                  style: const TextStyle(color: Colors.white, fontSize: 13),
-                  overflow: TextOverflow.visible,
-                ),
-              ),
-            ],
-          ),
-        );
-      }
-    }
-
-    addItem(Icons.email, 'email');
-    addItem(Icons.phone, 'phone');
-    addItem(Icons.location_on, 'location');
-    addItem(Icons.code, 'github');
-    addItem(Icons.link, 'linkedin');
-    addItem(Icons.public, 'website');
-
-    return _sectionBlock(
-      "CONTACT",
-      Container(
-        padding: const EdgeInsets.all(12),
-        color: Colors.black, // background
-        child: Wrap(
-          spacing: 30,
-          runSpacing: 12,
-          alignment: WrapAlignment.start,
-          children: items,
-        ),
-      ),
-      key: 'contact',
-      context: context,
-    );
-  }
-
-
-
-  Widget _buildSkills(List<String> skills, BuildContext context) {
-    if (skills.isEmpty) return const SizedBox.shrink();
-    return _sectionBlock(
-      "SKILLS",
-      Wrap(
-        spacing: 16,
-        runSpacing: 8,
-        children: skills
-            .map((s) => SizedBox(
-          width: MediaQuery.of(context).size.width / 3 - 30,
-          child: Text(
-            s,
-            style: const TextStyle(fontSize: 14),
-          ),
-        ))
-            .toList(),
-      ),
-      key: 'skills',
-      context: context,
-    );
-  }
-
-  Widget _buildExperience(List<Map<String, dynamic>> experiences, BuildContext context) {
-    if (experiences.isEmpty) return const SizedBox.shrink();
-    return _sectionBlock(
-      "WORK EXPERIENCE",
-      Column(
-        children: experiences.map((exp) {
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  exp['title'] ?? '',
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Expanded(
-                      child: Text(
-                        "${exp['company'] ?? ''}${ (exp['location'] ?? '').isNotEmpty ? ", ${exp['location']}" : ""}",
-                        style: const TextStyle(fontSize: 14),
-                      ),
-                    ),
-                    if ((exp['dates'] ?? '').isNotEmpty)
-                      Text(
-                        exp['dates'],
-                        style: const TextStyle(
-                          fontSize: 13,
-                          fontStyle: FontStyle.italic,
-                        ),
-                      ),
-                  ],
-                ),
-                if ((exp['duration'] ?? '').isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 2),
-                    child: Text(
-                      exp['duration'],
-                      style: const TextStyle(fontSize: 12, fontStyle: FontStyle.italic),
-                    ),
-                  ),
-                const SizedBox(height: 6),
-                ...((exp['details'] as List?) ?? []).map((d) => Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text("• ", style: TextStyle(fontSize: 14, height: 1.4)),
-                    Expanded(
-                      child: Text(d, style: const TextStyle(fontSize: 14, height: 1.4)),
-                    ),
-                  ],
-                )),
-              ],
-            ),
-          );
-        }).toList(),
-      ),
-      key: 'experience',
-      context: context,
-    );
-  }
-
-  Widget _buildProjects(List<Map<String, dynamic>> projects, BuildContext context) {
-    if (projects.isEmpty) return const SizedBox.shrink();
-    return _sectionBlock(
-      "PROJECTS",
-      Column(
-        children: projects.map((proj) {
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(proj['title'] ?? '',
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                if ((proj['description'] ?? '').isNotEmpty)
-                  Text(proj['description'] ?? '',
-                      style: const TextStyle(fontSize: 14, fontStyle: FontStyle.italic)),
-              ],
-            ),
-          );
-        }).toList(),
-      ),
-      key: 'projects',
-      context: context,
-    );
-  }
-
-  Widget _buildEducation(List<Map<String, dynamic>> education, BuildContext context) {
-    if (education.isEmpty) return const SizedBox.shrink();
-    return _sectionBlock(
-      "EDUCATION",
-      Column(
-        children: education.map((edu) {
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        edu['degree'] ?? '',
-                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                      ),
-                      if ((edu['institution'] ?? '').isNotEmpty)
-                        Text(
-                          edu['location'] != null && edu['location'].toString().isNotEmpty
-                              ? "${edu['institution']}, ${edu['location']}"
-                              : edu['institution'],
-                          style: const TextStyle(fontSize: 14, fontStyle: FontStyle.italic),
-                        ),
-                      if ((edu['gpa'] ?? '').isNotEmpty)
-                        Text(
-                          "GPA / Marks: ${edu['gpa']}",
-                          style: const TextStyle(
-                              fontSize: 13, fontStyle: FontStyle.italic, color: Colors.black87),
-                        ),
-                    ],
-                  ),
-                ),
-                Text(
-                  edu['date'] ?? '',
-                  style: const TextStyle(fontSize: 14, fontStyle: FontStyle.italic),
-                ),
-              ],
-            ),
-          );
-        }).toList(),
-      ),
-      key: 'education',
-      context: context,
-    );
-  }
-
-  Widget _buildCertifications(List<Map<String, dynamic>> certs, BuildContext context) {
-    if (certs.isEmpty) return const SizedBox.shrink();
-    return _sectionBlock(
-      "CERTIFICATIONS",
-      Column(
-        children: certs.map((cert) {
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(cert['title'] ?? '',
-                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                      Text(cert['issuer'] ?? '',
-                          style: const TextStyle(fontSize: 14, fontStyle: FontStyle.italic)),
-                    ],
-                  ),
-                ),
-                Text(cert['date'] ?? '',
-                    style: const TextStyle(fontSize: 14, fontStyle: FontStyle.italic)),
-              ],
-            ),
-          );
-        }).toList(),
-      ),
-      key: 'certifications',
-      context: context,
-    );
-  }
-
-  Widget _buildLanguages(List<String> languages, BuildContext context) {
-    if (languages.isEmpty) return const SizedBox.shrink();
-    return _sectionBlock(
-      "LANGUAGES",
-      Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: languages
-            .map((lang) => Padding(
-          padding: const EdgeInsets.only(bottom: 4),
-          child: Text(lang, style: const TextStyle(fontSize: 14)),
-        ))
-            .toList(),
-      ),
-      key: 'languages',
-      context: context,
-    );
-  }
-
-  Widget _sectionBlock(String title, Widget child, {String? key, required BuildContext context}) {
+  Widget _sectionBlock(String title, Widget child,
+      {String? key, required BuildContext context}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 24),
       child: Column(
@@ -615,4 +410,287 @@ class PreviewScreen extends StatelessWidget {
       ),
     );
   }
+
+
+
+
+
+  Widget _buildSkills(dynamic data, BuildContext context) {
+    List<String> skills = [];
+
+    if (data is String) {
+      skills = [data];
+    } else if (data is List) {
+      skills = data.map((e) => e.toString()).toList();
+    }
+
+    if (skills.isEmpty) return const SizedBox.shrink();
+
+    return _sectionBlock(
+      "SKILLS",
+      Wrap(
+        spacing: 16,
+        runSpacing: 8,
+        children: skills
+            .map((s) => SizedBox(
+          width: MediaQuery.of(context).size.width / 3 - 30,
+          child: Text(s, style: const TextStyle(fontSize: 14)),
+        ))
+            .toList(),
+      ),
+      key: 'skills',
+      context: context,
+    );
+  }
+
+  Widget _buildExperience(dynamic data, BuildContext context) {
+    List<Map<String, dynamic>> experiences = [];
+
+    if (data is Map<String, dynamic>) {
+      experiences = [data];
+    } else if (data is List) {
+      experiences = data
+          .map((e) => e is Map<String, dynamic> ? e : <String, dynamic>{})
+          .toList();
+    }
+
+    if (experiences.isEmpty) return const SizedBox.shrink();
+
+    return _sectionBlock(
+      "WORK EXPERIENCE",
+      Column(
+        children: experiences.map((exp) {
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(exp['title'] ?? '',
+                    style: const TextStyle(
+                        fontSize: 16, fontWeight: FontWeight.bold)),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        "${exp['company'] ?? ''}${(exp['location'] ?? '').isNotEmpty ? ", ${exp['location']}" : ""}",
+                        style: const TextStyle(fontSize: 14),
+                      ),
+                    ),
+                    if ((exp['dates'] ?? '').isNotEmpty)
+                      Text(
+                        exp['dates'],
+                        style: const TextStyle(
+                            fontSize: 13, fontStyle: FontStyle.italic),
+                      ),
+                  ],
+                ),
+                if ((exp['duration'] ?? '').isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 2),
+                    child: Text(exp['duration'],
+                        style: const TextStyle(
+                            fontSize: 12, fontStyle: FontStyle.italic)),
+                  ),
+                const SizedBox(height: 6),
+                if ((exp['details'] as List?)?.isNotEmpty ?? false) ...[
+                  ...((exp['details'] as List).map((d) => Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        "• ",
+                        style: TextStyle(fontSize: 14, height: 1.4),
+                      ),
+                      Expanded(
+                        child: Text(
+                          d.toString(),
+                          style: const TextStyle(fontSize: 14, height: 1.4),
+                        ),
+                      ),
+                    ],
+                  ),
+                  ).toList()),
+                ],
+              ],
+            ),
+          );
+        }).toList(),
+      ),
+      key: 'experience',
+      context: context,
+    );
+  }
+
+  Widget _buildProjects(dynamic data, BuildContext context) {
+    List<Map<String, dynamic>> projects = [];
+
+    if (data is Map<String, dynamic>) {
+      projects = [data];
+    } else if (data is List) {
+      projects =
+          data.map((e) => e is Map<String, dynamic> ? e : <String, dynamic>{}).toList();
+    }
+
+    if (projects.isEmpty) return const SizedBox.shrink();
+
+    return _sectionBlock(
+      "PROJECTS",
+      Column(
+        children: projects.map((proj) {
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(proj['title'] ?? '',
+                    style:
+                    const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                if ((proj['description'] ?? '').toString().isNotEmpty)
+                  Text(proj['description'] ?? '',
+                      style: const TextStyle(
+                          fontSize: 14, fontStyle: FontStyle.italic)),
+              ],
+            ),
+          );
+        }).toList(),
+      ),
+      key: 'projects',
+      context: context,
+    );
+  }
+
+  Widget _buildEducation(dynamic data, BuildContext context) {
+    List<Map<String, dynamic>> education = [];
+
+    if (data is Map<String, dynamic>) {
+      education = [data];
+    } else if (data is List) {
+      education =
+          data.map((e) => e is Map<String, dynamic> ? e : <String, dynamic>{}).toList();
+    }
+
+    if (education.isEmpty) return const SizedBox.shrink();
+
+    return _sectionBlock(
+      "EDUCATION",
+      Column(
+        children: education.map((edu) {
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(edu['degree'] ?? '',
+                          style: const TextStyle(
+                              fontSize: 16, fontWeight: FontWeight.bold)),
+                      if ((edu['institution'] ?? '').toString().isNotEmpty)
+                        Text(
+                          edu['location'] != null &&
+                              edu['location'].toString().isNotEmpty
+                              ? "${edu['institution']}, ${edu['location']}"
+                              : edu['institution'] ?? '',
+                          style: const TextStyle(
+                              fontSize: 14, fontStyle: FontStyle.italic),
+                        ),
+                      if ((edu['gpa'] ?? '').toString().isNotEmpty)
+                        Text(
+                          "GPA / Marks: ${edu['gpa']}",
+                          style: const TextStyle(
+                              fontSize: 13,
+                              fontStyle: FontStyle.italic,
+                              color: Colors.black87),
+                        ),
+                    ],
+                  ),
+                ),
+                Text(edu['date'] ?? '',
+                    style: const TextStyle(
+                        fontSize: 14, fontStyle: FontStyle.italic)),
+              ],
+            ),
+          );
+        }).toList(),
+      ),
+      key: 'education',
+      context: context,
+    );
+  }
+
+  Widget _buildCertifications(dynamic data, BuildContext context) {
+    List<Map<String, dynamic>> certs = [];
+
+    if (data is Map<String, dynamic>) {
+      certs = [data];
+    } else if (data is List) {
+      certs =
+          data.map((e) => e is Map<String, dynamic> ? e : <String, dynamic>{}).toList();
+    }
+
+    if (certs.isEmpty) return const SizedBox.shrink();
+
+    return _sectionBlock(
+      "CERTIFICATIONS",
+      Column(
+        children: certs.map((cert) {
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(cert['title'] ?? '',
+                          style: const TextStyle(
+                              fontSize: 16, fontWeight: FontWeight.bold)),
+                      Text(cert['issuer'] ?? '',
+                          style: const TextStyle(
+                              fontSize: 14, fontStyle: FontStyle.italic)),
+                    ],
+                  ),
+                ),
+                Text(cert['date'] ?? '',
+                    style: const TextStyle(fontSize: 14, fontStyle: FontStyle.italic)),
+              ],
+            ),
+          );
+        }).toList(),
+      ),
+      key: 'certifications',
+      context: context,
+    );
+  }
+
+  Widget _buildLanguages(dynamic data, BuildContext context) {
+    List<String> languages = [];
+
+    if (data is String) {
+      languages = [data];
+    } else if (data is List) {
+      languages = data.map((e) => e.toString()).toList();
+    }
+
+    if (languages.isEmpty) return const SizedBox.shrink();
+
+    return _sectionBlock(
+      "LANGUAGES",
+      Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: languages
+            .map((lang) => Padding(
+          padding: const EdgeInsets.only(bottom: 4),
+          child: Text(lang, style: const TextStyle(fontSize: 14)),
+        ))
+            .toList(),
+      ),
+      key: 'languages',
+      context: context,
+    );
+  }
+
 }
