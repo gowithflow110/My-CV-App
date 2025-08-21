@@ -1,5 +1,3 @@
-// lib/modules/voice_input/edit_mode_manager.dart
-
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../models/cv_model.dart';
@@ -26,44 +24,60 @@ class EditModeManager {
 
   /// Initialize edit mode variables and preload data if applicable
   Future<void> initializeEditMode(Map<String, dynamic>? args) async {
-    if (args == null || args['forceEdit'] != true) return;
+    if (args == null) return;
 
-    isEditMode = true;
-    editField = args['editField'] as String?;
-    previousData = args['previousData'];
-    controller.isManualInput = false;
+    if (args.containsKey('forceEdit') && args['forceEdit'] == true ||
+        args.containsKey('startSectionKey')) {
+      isEditMode = true;
+      controller.isManualInput = false;
 
-    if (editField != null) {
-      final idx = controller.sections.indexWhere((s) => s['key'] == editField);
-      if (idx != -1) {
-        controller.currentIndex = idx;
+      if (args.containsKey('cvModel')) {
+        final cvModel = args['cvModel'] as CVModel;
+        controller.cvId = cvModel.cvId;
       }
 
-      final isMultiple = controller.sections
-          .firstWhere((s) => s['key'] == editField)['multiple'] as bool;
+      if (args.containsKey('editField')) {
+        editField = args['editField'] as String?;
+      } else if (args.containsKey('startSectionKey')) {
+        editField = args['startSectionKey'] as String?;
+      }
 
-      if (isMultiple) {
-        // Keep existing entries visible
-        if (previousData is List<String>) {
-          controller.userData[editField!] = List<String>.from(previousData as List);
-        } else if (previousData is String && previousData!.isNotEmpty) {
-          controller.userData[editField!] = [previousData!];
+      if (editField != null) {
+        final idx = controller.sections.indexWhere((s) => s['key'] == editField);
+        if (idx != -1) {
+          controller.currentIndex = idx;
         }
 
-        // If editing a specific entry, preload it
-        if (args.containsKey('editIndex') && args['editIndex'] != null) {
-          editEntryIndex = args['editIndex'] as int;
-          final list = List<String>.from(controller.userData[editField!] ?? []);
-          if (editEntryIndex! < list.length) {
-            controller.transcription = list[editEntryIndex!];
+        previousData = controller.userData[editField!];
+
+        final isMultiple = controller.sections
+            .firstWhere((s) => s['key'] == editField)['multiple'] as bool;
+
+        if (isMultiple) {
+          // Keep existing entries visible
+          if (previousData is List) {
+            controller.userData[editField!] = List<String>.from(previousData as List);
+          } else if (previousData is String && previousData!.isNotEmpty) {
+            controller.userData[editField!] = [previousData!];
+          } else {
+            controller.userData[editField!] = [];
+          }
+
+          // If editing a specific entry, preload it
+          if (args.containsKey('editIndex') && args['editIndex'] != null) {
+            editEntryIndex = args['editIndex'] as int;
+            final list = List<String>.from(controller.userData[editField!] ?? []);
+            if (editEntryIndex! < list.length) {
+              controller.transcription = list[editEntryIndex!];
+            }
+          } else {
+            editEntryIndex = null;
+            controller.transcription = '';
           }
         } else {
-          editEntryIndex = null;
-          controller.transcription = '';
+          controller.transcription = previousData?.toString() ?? '';
+          controller.userData[editField!] = controller.transcription;
         }
-      } else {
-        controller.transcription = previousData?.toString() ?? '';
-        controller.userData[editField!] = controller.transcription;
       }
     }
   }
@@ -74,9 +88,9 @@ class EditModeManager {
 
     final key = controller.sections[controller.currentIndex]['key'];
     final isMultiple =
-        controller.sections[controller.currentIndex]['multiple'] as bool;
+    controller.sections[controller.currentIndex]['multiple'] as bool;
     final required =
-        controller.sections[controller.currentIndex]['required'] as bool;
+    controller.sections[controller.currentIndex]['required'] as bool;
     final trimmedValue = controller.transcription.trim();
 
     bool hasValidData;
