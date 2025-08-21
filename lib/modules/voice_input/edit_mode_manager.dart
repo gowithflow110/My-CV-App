@@ -26,57 +26,60 @@ class EditModeManager {
   Future<void> initializeEditMode(Map<String, dynamic>? args) async {
     if (args == null) return;
 
-    if (args.containsKey('forceEdit') && args['forceEdit'] == true ||
-        args.containsKey('startSectionKey')) {
+    final forceEdit = args['forceEdit'] == true;
+    final startSectionKey = args['startSectionKey'] as String?;
+
+    if (forceEdit || startSectionKey != null) {
       isEditMode = true;
       controller.isManualInput = false;
 
-      if (args.containsKey('cvModel')) {
+      // Load CV ID if available
+      if (args.containsKey('cvModel') && args['cvModel'] is CVModel) {
         final cvModel = args['cvModel'] as CVModel;
         controller.cvId = cvModel.cvId;
       }
 
-      if (args.containsKey('editField')) {
-        editField = args['editField'] as String?;
-      } else if (args.containsKey('startSectionKey')) {
-        editField = args['startSectionKey'] as String?;
-      }
+      // Determine which field to edit
+      editField = args['editField'] as String? ?? startSectionKey;
 
       if (editField != null) {
-        final section = controller.sections
-            .firstWhere((s) => s['key'] == editField);
+        // Find the section
+        final section = controller.sections.firstWhere(
+              (s) => s['key'] == editField,
+          orElse: () => {},
+        );
 
-        controller.currentIndex =
-            controller.sections.indexOf(section);
+        controller.currentIndex = controller.sections.indexOf(section);
 
+        // Get previous data
         previousData = controller.userData[editField!];
 
-        final isMultiple = section['multiple'] as bool;
-        final isMap = section['map'] == true; // NEW
+        final isMultiple = section['multiple'] as bool? ?? false;
+        final isMap = section['map'] as bool? ?? false;
 
         if (isMap) {
-          // Ensure we always have a map for editing
+          // Ensure we have a map for editing
           if (previousData is Map<String, dynamic>) {
             controller.userData[editField!] =
-            Map<String, String>.from(previousData);
+            Map<String, String>.from(previousData as Map);
           } else {
-            controller.userData[editField!] = {};
+            controller.userData[editField!] = <String, String>{};
           }
-          controller.transcription = ''; // map sections handled field by field
+          controller.transcription = ''; // Map handled field by field
         } else if (isMultiple) {
+          // Ensure list structure
           if (previousData is List) {
-            controller.userData[editField!] =
-            List<String>.from(previousData as List);
+            controller.userData[editField!] = List<String>.from(previousData as List);
           } else if (previousData is String && previousData.isNotEmpty) {
             controller.userData[editField!] = [previousData];
           } else {
-            controller.userData[editField!] = [];
+            controller.userData[editField!] = <String>[];
           }
 
-          if (args.containsKey('editIndex') && args['editIndex'] != null) {
+          // Handle editing a specific list entry
+          if (args.containsKey('editIndex') && args['editIndex'] is int) {
             editEntryIndex = args['editIndex'] as int;
-            final list =
-            List<String>.from(controller.userData[editField!] ?? []);
+            final list = List<String>.from(controller.userData[editField!] ?? []);
             if (editEntryIndex! < list.length) {
               controller.transcription = list[editEntryIndex!];
             }
@@ -85,6 +88,7 @@ class EditModeManager {
             controller.transcription = '';
           }
         } else {
+          // Single value section
           controller.transcription = previousData?.toString() ?? '';
           controller.userData[editField!] = controller.transcription;
         }
@@ -92,31 +96,32 @@ class EditModeManager {
     }
   }
 
+
   /// Save updates for the current edit and exit (pop)
   Future<void> saveUpdatesAndExit() async {
     if (!isEditMode || editField == null) return;
 
     final section = controller.sections[controller.currentIndex];
-    final key = section['key'];
-    final isMultiple = section['multiple'] as bool;
-    final required = section['required'] as bool;
-    final isMap = section['map'] == true; // NEW
+    final key = section['key'] as String;
+    final isMultiple = section['multiple'] as bool? ?? false;
+    final required = section['required'] as bool? ?? false;
+    final isMap = section['map'] == true;
     final trimmedValue = controller.transcription.trim();
 
     bool hasValidData = false;
 
     if (isMap) {
-      final entries = Map<String, String>.from(
-          controller.userData[key] ?? {});
-
-      // If transcription refers to a single field update (optional improvement),
-      // you would handle it here. For now, we trust the map is updated elsewhere.
+      // Ensure all map values are strings
+      final rawMap = controller.userData[key] as Map<dynamic, dynamic>? ?? {};
+      final entries = rawMap.map<String, String>(
+            (k, v) => MapEntry(k.toString(), v.toString()),
+      );
       hasValidData = entries.values.any((v) => v.trim().isNotEmpty);
-      if (hasValidData) {
-        controller.userData[key] = entries;
-      }
+      if (hasValidData) controller.userData[key] = entries;
     } else if (isMultiple) {
-      final entries = List<String>.from(controller.userData[key] ?? []);
+      // Ensure list contains only strings
+      final rawList = controller.userData[key] as List<dynamic>? ?? [];
+      final entries = rawList.map((e) => e.toString()).toList();
       if (trimmedValue.isNotEmpty) {
         if (editEntryIndex != null && editEntryIndex! < entries.length) {
           entries[editEntryIndex!] = trimmedValue;
@@ -125,22 +130,20 @@ class EditModeManager {
         }
       }
       hasValidData = entries.isNotEmpty;
-      if (hasValidData) {
-        controller.userData[key] = entries;
-      }
+      if (hasValidData) controller.userData[key] = entries;
     } else {
       hasValidData = trimmedValue.isNotEmpty;
-      if (hasValidData) {
-        controller.userData[key] = trimmedValue;
-      }
+      if (hasValidData) controller.userData[key] = trimmedValue;
     }
 
+    // Required field validation
     if (required && !hasValidData) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           backgroundColor: Colors.orange,
-          content:
-          Text("This section is required. Please enter at least one value."),
+          content: Text(
+            "This section is required. Please enter at least one value.",
+          ),
         ),
       );
       return;
@@ -156,13 +159,27 @@ class EditModeManager {
       return;
     }
 
-    final userId = FirebaseAuth.instance.currentUser?.uid ?? '';
-    final cvId = controller.cvId;
+    // Convert userData to Map<String, CVSection> safely
+    final cvData = controller.userData.map<String, CVSection>((key, value) {
+      if (value is CVSection) return MapEntry(key, value);
+
+      if (value is List) {
+        final list = value.map((e) => e.toString()).toList();
+        return MapEntry(key, CVSection(text: list.join(', ')));
+      }
+
+      if (value is Map) {
+        final map = value.map((k, v) => MapEntry(k.toString(), v.toString()));
+        return MapEntry(key, CVSection(text: map.values.join(', ')));
+      }
+
+      return MapEntry(key, CVSection(text: value?.toString() ?? ''));
+    });
 
     final cvModel = CVModel(
-      cvId: cvId,
-      userId: userId,
-      cvData: Map<String, dynamic>.from(controller.userData),
+      cvId: controller.cvId,
+      userId: FirebaseAuth.instance.currentUser?.uid ?? '',
+      cvData: cvData,
       isCompleted: false,
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
@@ -170,4 +187,7 @@ class EditModeManager {
 
     Navigator.pop(context, cvModel);
   }
+
+
+
 }

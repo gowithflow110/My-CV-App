@@ -74,28 +74,47 @@ class _VoiceInputScreenState extends State<VoiceInputScreen> {
     super.didChangeDependencies();
 
     final args = ModalRoute.of(context)?.settings.arguments;
-    if (args is CVModel) {
-      if (_controller.userData != args.cvData) {
-        setState(() {
-          _controller.userData = Map<String, dynamic>.from(args.cvData);
-        });
-      }
-    } else if (args is Map<String, dynamic> && args.containsKey('cvModel')) {
-      final cvModel = args['cvModel'] as CVModel;
-      if (_controller.userData != cvModel.cvData) {
-        setState(() {
-          _controller.userData = Map<String, dynamic>.from(cvModel.cvData);
-        });
-      }
+
+    // Convert CVSection to its text, otherwise return value as is
+    dynamic cvSectionToDynamic(dynamic value) {
+      if (value is CVSection) return value.text;
+      return value;
     }
 
+    // Convert Map<String, dynamic> cvData into plain dynamic map
+    Map<String, dynamic> convertCvData(Map<String, dynamic> cvData) {
+      return cvData.map<String, dynamic>(
+            (key, value) => MapEntry(key, cvSectionToDynamic(value)),
+      );
+    }
+
+    Map<String, dynamic>? newData;
+
+    if (args is CVModel) {
+      newData = convertCvData(args.cvData);
+    } else if (args is Map<String, dynamic> && args.containsKey('cvModel')) {
+      final cvModel = args['cvModel'] as CVModel;
+      newData = convertCvData(cvModel.cvData);
+    }
+
+    if (newData != null && _controller.userData != newData) {
+      setState(() => _controller.userData = newData!);
+    }
+
+    // Sync transcription safely with manualController
     if (_editModeManager.manualController.text != _controller.transcription) {
-      _editModeManager.manualController.text = _controller.transcription;
-      _editModeManager.manualController.selection = TextSelection.fromPosition(
-        TextPosition(offset: _editModeManager.manualController.text.length),
+      _editModeManager.manualController.value = TextEditingValue(
+        text: _controller.transcription,
+        selection: TextSelection.collapsed(
+          offset: _controller.transcription.length,
+        ),
       );
     }
   }
+
+
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -144,7 +163,14 @@ class _VoiceInputScreenState extends State<VoiceInputScreen> {
                       CVModel(
                         cvId: _controller.cvId,
                         userId: FirebaseAuth.instance.currentUser?.uid ?? '',
-                        cvData: Map<String, dynamic>.from(_controller.userData),
+                        cvData: (controller.userData as Map<String, dynamic>).map<String, CVSection>(
+                              (key, value) {
+                            if (value is CVSection) return MapEntry(key, value); // Already CVSection
+                            if (value is Map<String, dynamic>) return MapEntry(key, CVSection.fromMap(value)); // Map from Firestore
+                            return MapEntry(key, CVSection(text: value.toString())); // fallback for plain values
+                          },
+                        ),
+
                         isCompleted: false,
                         createdAt: DateTime.now(),
                         updatedAt: DateTime.now(),
@@ -478,7 +504,14 @@ class _VoiceInputScreenState extends State<VoiceInputScreen> {
                                 final cvModel = CVModel(
                                   cvId: cvId,
                                   userId: userId,
-                                  cvData: controller.userData,
+                                  cvData: (controller.userData as Map<String, dynamic>).map<String, CVSection>(
+                                        (key, value) {
+                                      if (value is CVSection) return MapEntry(key, value);
+                                      if (value is Map<String, dynamic>) return MapEntry(key, CVSection.fromMap(value));
+                                      return MapEntry(key, CVSection(text: value.toString()));
+                                    },
+                                  ),
+
                                   isCompleted: false,
                                   createdAt: DateTime.now(),
                                   updatedAt: DateTime.now(),

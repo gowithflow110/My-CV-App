@@ -12,10 +12,40 @@ class PreviewScreen extends StatelessWidget {
   final CVModel cv;
   const PreviewScreen({Key? key, required this.cv}) : super(key: key);
 
+  dynamic _convertCVSection(dynamic data) {
+    if (data is CVSection) {
+      return data; // keep as CVSection, don't call toMap() at top level
+    } else if (data is List) {
+      return data.map((e) => _convertCVSection(e)).toList();
+    } else if (data is Map) {
+      // Ensure keys are String and values are properly converted
+      return data.map<String, dynamic>((k, v) => MapEntry(k.toString(), _convertCVSection(v)));
+    } else {
+      return data; // primitive types remain unchanged
+    }
+  }
+
+
   @override
   Widget build(BuildContext context) {
     final template = TemplateDefault(cv, null);
     final sections = template.getOrderedSections();
+
+    dynamic _convertCVSection(dynamic data) {
+      if (data is CVSection) {
+        return data.toMap();
+      } else if (data is List) {
+        return data.map((e) => _convertCVSection(e)).toList();
+      } else if (data is Map) {
+        final Map<String, dynamic> result = {};
+        data.forEach((key, value) {
+          result[key.toString()] = _convertCVSection(value);
+        });
+        return result;
+      } else {
+        return data;
+      }
+    }
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -80,11 +110,19 @@ class PreviewScreen extends StatelessWidget {
         itemCount: sections.length,
         itemBuilder: (context, index) {
           final s = sections[index];
-          return _buildSection(s['type'], s['data'], context);
+          final type = s['type'];
+          final rawData = s['data'];
+          final data = _convertCVSection(rawData);
+
+          // Pass data as-is, only wrap lists if strictly needed
+          return _buildSection(type, data, context);
         },
       ),
     );
   }
+
+
+
 
   Future<bool> _showConfirmDialog(BuildContext context) async {
     return await showDialog<bool>(

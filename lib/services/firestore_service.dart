@@ -173,7 +173,17 @@ class FirestoreService {
         ..['name'] = customName ?? "My CV";
 
       final dataToSave = cv
-          .copyWith(cvId: docId, cvData: updatedCvData)
+          .copyWith(
+        cvId: docId,
+        cvData: (updatedCvData as Map<String, dynamic>).map<String, CVSection>(
+              (key, value) {
+            if (value is CVSection) return MapEntry(key, value);
+            if (value is Map<String, dynamic>) return MapEntry(key, CVSection.fromMap(value));
+            return MapEntry(key, CVSection(text: value.toString()));
+          },
+        ),
+      )
+
           .toMap()
         ..['createdAt'] = FieldValue.serverTimestamp();
 

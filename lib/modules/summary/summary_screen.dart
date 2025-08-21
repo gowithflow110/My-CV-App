@@ -140,7 +140,8 @@ class _SummaryScreenState extends State<SummaryScreen> {
 
                                             if (content is List) {
                                               previousData =
-                                                  List<String>.from(content);
+                                              List<String>.from((content?.textList ?? []));
+
                                             } else {
                                               previousData =
                                                   content?.toString() ?? '';
@@ -164,7 +165,16 @@ class _SummaryScreenState extends State<SummaryScreen> {
                                             } else if (result
                                                 is Map<String, dynamic>) {
                                               setState(() {
-                                                _cvModel.cvData.addAll(result);
+                                                _cvModel.cvData.addAll(
+                                                  (result as Map<String, dynamic>).map<String, CVSection>(
+                                                        (key, value) {
+                                                      if (value is CVSection) return MapEntry(key, value);
+                                                      if (value is Map<String, dynamic>) return MapEntry(key, CVSection.fromMap(value));
+                                                      return MapEntry(key, CVSection(text: value.toString()));
+                                                    },
+                                                  ),
+                                                );
+
                                               });
                                             }
                                           },

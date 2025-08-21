@@ -51,47 +51,86 @@ class TemplateDefault {
     final data = cv.cvData;
 
     return [
+      // Header
       {
         'type': 'header',
         'data': {
-          'name': data['fullName'] ?? '',
-          'summary': data['summary'] ?? '',
-        }
+          'name': data['fullName']?.text ?? '',
+          'summary': data['summary']?.text ?? '',
+        },
       },
-      {'type': 'contact', 'data': data['contact'] ?? {}},
-      {'type': 'skills', 'data': List<String>.from(data['skills'] ?? [])},
+
+      // Contact
+      {
+        'type': 'contact',
+        'data': data['contact'] ?? {},
+      },
+
+      // Skills
+      {
+        'type': 'skills',
+        'data': List<String>.from(
+          (data['skills']?.textList ?? []),
+        ),
+      },
+
+      // Experience
       {
         'type': 'experience',
-        'data': ExperienceSanitizer.sanitizeList(data['experience']),
+        'data': ExperienceSanitizer.sanitizeList(
+          (data['experience']?.textList ?? []).map((e) => {'title': e}).toList(),
+        ),
       },
+
+      // Projects
       {
         'type': 'projects',
         'data': List<Map<String, dynamic>>.from(
-          (data['projects'] ?? []).map((proj) => {
-                'title': proj['name'] ?? '',
-                'description': proj['description'] ?? '',
-              }),
-        )
+          (data['projects']?.textList ?? []).map((projText) {
+            return {
+              'title': projText,
+              'description': '', // You can parse description if needed
+            };
+          }),
+        ),
       },
+
+      // Education
       {
         'type': 'education',
         'data': List<Map<String, dynamic>>.from(
-          (data['education'] ?? []).map((edu) => {
-                'degree': edu['degree'] ?? '',
-                'institution': edu['institution'] ?? '',
-                'location': edu['location'] ?? '',
-                'date': edu['year'] ?? '',
-                'gpa': edu['gpa'] ?? '',
-              }),
-        )
+          (data['education']?.textList ?? []).map((eduText) => {
+            'degree': eduText,
+            'institution': '',
+            'location': '',
+            'date': '',
+            'gpa': '',
+          }),
+        ),
       },
+
+      // Certifications
       {
         'type': 'certifications',
-        'data': List<Map<String, dynamic>>.from(data['certifications'] ?? []),
+        'data': List<Map<String, dynamic>>.from(
+          (data['certifications']?.textList ?? []).map((certText) => {
+            'title': certText,
+            'issuer': '',
+            'date': '',
+          }),
+        ),
       },
-      {'type': 'languages', 'data': List<String>.from(data['languages'] ?? [])},
+
+      // Languages
+      {
+        'type': 'languages',
+        'data': List<String>.from(
+          data['languages']?.textList ?? [],
+        ),
+      },
     ];
   }
+
 
   // ---------------- SECTION RENDERERS ----------------
   pw.Widget _buildPdfSection(Map<String, dynamic> section) {

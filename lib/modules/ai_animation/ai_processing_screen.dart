@@ -48,7 +48,7 @@ class _AIProcessingScreenState extends State<AIProcessingScreen>
     setState(() {
       _hasError = false;
       _progress = 0.0;
-      _progressText = _steps[0];
+      _progressText = _steps.isNotEmpty ? _steps[0] : "";
       _providerUsed = "";
     });
 
@@ -62,27 +62,34 @@ class _AIProcessingScreenState extends State<AIProcessingScreen>
       // Step 3: Send to AI to enhance content & fill missing template fields
       final polishedJson = await _simulateProgressAndCallAI(refined);
       setState(() => _providerUsed = polishedJson["_provider"] ?? "");
-
       polishedJson.remove("_provider"); // remove internal helper key
 
-      // Step 4: Ensure AI output still follows our strict schema
+      // Step 4: Ensure AI output follows strict schema
       final finalStructured = CVParser.ensureTemplateCompliance(polishedJson);
 
-      // Step 5: Build updated CV model
+      // Step 5: Build updated CV model with type-safe CVSections
+      final Map<String, CVSection> updatedCVData = finalStructured.map<String, CVSection>((key, value) {
+        if (value is CVSection) return MapEntry(key, value);
+        if (value is List) return MapEntry(key, CVSection(text: value.map((e) => e.toString()).join(', ')));
+        if (value is Map) return MapEntry(key, CVSection(text: value.values.map((v) => v.toString()).join(', ')));
+        return MapEntry(key, CVSection(text: value?.toString() ?? ''));
+      });
+
+      // Step 6: Build final CVModel
       final updated = widget.rawCV.copyWith(
-        cvData: finalStructured,
+        cvData: updatedCVData,
         aiEnhancedText: null,
         isCompleted: true,
         updatedAt: DateTime.now(),
       );
 
-      // Step 6: Save to Firestore (AI-generated CV)
+      // Step 7: Save to Firestore (AI-generated CV)
       final userId = FirebaseAuth.instance.currentUser?.uid ?? '';
       if (userId.isNotEmpty) {
         await _firestoreService.saveGeneratedCV(userId, updated);
       }
 
-      // Step 7: Navigate to preview
+      // Step 8: Navigate to preview
       if (!mounted) return;
       Navigator.pushReplacementNamed(
         context,
@@ -95,23 +102,64 @@ class _AIProcessingScreenState extends State<AIProcessingScreen>
     }
   }
 
+
+
   Future<Map<String, dynamic>> _simulateProgressAndCallAI(
       Map<String, dynamic> refined) async {
-    for (int i = 0; i < _steps.length; i++) {
-      await Future.delayed(const Duration(seconds: 1));
-      if (!mounted) break;
-      setState(() {
-        _progress = (i + 1) / _steps.length;
-        _progressText = _steps[i];
-      });
-    }
-
     final aiService = AIService();
-    final polishedJson = await aiService.polishCVAsJson(refined);
-    polishedJson["_provider"] = aiService.lastProviderUsed;
+    Map<String, dynamic> polishedJson = {};
+
+    try {
+      // Step 1: Update progress incrementally before calling AI
+      for (int i = 0; i < _steps.length; i++) {
+        await Future.delayed(const Duration(milliseconds: 600));
+        if (!mounted) break;
+        setState(() {
+          _progress = (i + 1) / (_steps.length + 2); // leave room for AI call
+          _progressText = _steps[i];
+        });
+      }
+
+      // Step 2: Call AI service while showing interpolated progress
+      final aiFuture = aiService.polishCVAsJson(refined);
+
+      // Animate progress smoothly while AI call is ongoing
+      double startProgress = _progress;
+      const int updates = 10; // number of progress increments
+      for (int j = 1; j <= updates; j++) {
+        await Future.delayed(const Duration(milliseconds: 100));
+        if (!mounted) break;
+        setState(() {
+          _progress = startProgress + (j / updates) * (1.0 - startProgress);
+        });
+      }
+
+      // Await AI result
+      polishedJson = await aiFuture;
+
+      // Store which AI provider was used
+      polishedJson["_provider"] = aiService.lastProviderUsed;
+
+      // Step 3: Ensure progress is complete
+      if (mounted) {
+        setState(() {
+          _progress = 1.0;
+          _progressText = "AI Processing Complete";
+        });
+      }
+    } catch (e, stack) {
+      debugPrint("❌ Error during AI processing: $e\n$stack");
+      if (mounted) {
+        setState(() {
+          _progressText = "Error occurred during AI processing";
+        });
+      }
+      rethrow; // allow caller to handle retry
+    }
 
     return polishedJson;
   }
+
 
   @override
   void dispose() {

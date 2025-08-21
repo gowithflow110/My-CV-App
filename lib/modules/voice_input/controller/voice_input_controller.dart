@@ -497,7 +497,7 @@ class VoiceInputController extends ChangeNotifier {
   }
 
   Future<void> saveCurrentData() async {
-  if (userId.isEmpty) throw Exception("User not logged in");
-  await _firestoreService.saveSection(userId, cvId, userData);
-}
+    if (userId.isEmpty) throw Exception("User not logged in");
+    await _firestoreService.saveSection(userId, cvId, userData);
+  }
 }
