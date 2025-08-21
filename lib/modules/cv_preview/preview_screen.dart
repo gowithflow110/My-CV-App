@@ -279,10 +279,14 @@ class PreviewScreen extends StatelessWidget {
   }
 
   Widget _buildContact(Map<String, dynamic> data, BuildContext context) {
+    if (data.isEmpty) return const SizedBox.shrink();
+
     final items = <Widget>[];
 
-    void addItem(IconData icon, String? value) {
-      if (value != null && value.trim().isNotEmpty) {
+    // Helper to safely add items from the contact map
+    void addItem(IconData icon, String keyName) {
+      final value = data[keyName]?.toString().trim();
+      if (value != null && value.isNotEmpty) {
         items.add(
           Row(
             mainAxisSize: MainAxisSize.min,
@@ -302,25 +306,31 @@ class PreviewScreen extends StatelessWidget {
       }
     }
 
-    addItem(Icons.email, data['email']);
-    addItem(Icons.location_on, data['location']);
-    addItem(Icons.phone, data['phone']);
-    addItem(Icons.code, data['github']);
-    addItem(Icons.link, data['linkedin']);
-    addItem(Icons.public, data['website']);
+    addItem(Icons.email, 'email');
+    addItem(Icons.phone, 'phone');
+    addItem(Icons.location_on, 'location');
+    addItem(Icons.code, 'github');
+    addItem(Icons.link, 'linkedin');
+    addItem(Icons.public, 'website');
 
     return _sectionBlock(
       "CONTACT",
-      Wrap(
-        spacing: 30,
-        runSpacing: 12,
-        alignment: WrapAlignment.start,
-        children: items,
+      Container(
+        padding: const EdgeInsets.all(12),
+        color: Colors.black, // background
+        child: Wrap(
+          spacing: 30,
+          runSpacing: 12,
+          alignment: WrapAlignment.start,
+          children: items,
+        ),
       ),
       key: 'contact',
       context: context,
     );
   }
+
+
 
   Widget _buildSkills(List<String> skills, BuildContext context) {
     if (skills.isEmpty) return const SizedBox.shrink();
