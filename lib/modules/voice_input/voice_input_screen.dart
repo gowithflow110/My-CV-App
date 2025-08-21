@@ -108,19 +108,25 @@ class _VoiceInputScreenState extends State<VoiceInputScreen> {
           final bool required = section['required'];
           final String hint = section['hint'];
 
+          final dynamic value = controller.userData[key];
+
           final hasCompleted = multiple
-              ? (controller.userData[key] as List).isNotEmpty
-              : (controller.userData[key]?.toString().trim().isNotEmpty ?? false);
+              ? (value is List && value.isNotEmpty)
+              : (value is Map
+              ? value.isNotEmpty // ✅ contact (or other map-based sections)
+              : (value?.toString().trim().isNotEmpty ?? false));
 
           _autoScrollToBottom();
+
 
           return Scaffold(
             appBar: AppBar(
               title: Text(
                 _editModeManager.isEditMode
-                    ? 'Edit Section: ${section['title']}'
+                    ? 'Edit Section: ${section['title'] ?? ''}'
                     : 'Voice Input',
               ),
+
               backgroundColor: const Color(0xFFE8F3F8),
               leading: IconButton(
                 icon: const Icon(Icons.arrow_back),
@@ -188,7 +194,7 @@ class _VoiceInputScreenState extends State<VoiceInputScreen> {
                     SectionProgressBar(
                       currentIndex: controller.currentIndex,
                       totalSections: controller.sections.length,
-                      title: section['title'],
+                      title: section['title']?? '',
                       required: required,
                       hasCompleted: hasCompleted,
                     ),
@@ -395,11 +401,13 @@ class _VoiceInputScreenState extends State<VoiceInputScreen> {
                               backgroundColor: Colors.blue,
                               foregroundColor: Colors.white,
                               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                             ),
-                            onPressed: controller.currentIndex == 0 || controller.isLoading
+                            onPressed: (controller.currentIndex == 0 || controller.isLoading)
                                 ? null
-                                : controller.backSection,
+                                : () => controller.backSection(),
                           ),
+
                           IconButton(
                             icon: const Icon(Icons.refresh, color: Colors.blue, size: 32),
                             onPressed: controller.isLoading
@@ -476,15 +484,33 @@ class _VoiceInputScreenState extends State<VoiceInputScreen> {
 
                     const SizedBox(height: 20),
 
-                    if (multiple && (controller.userData[key] as List).isNotEmpty)
+                    if (multiple && controller.userData[key] is List && (controller.userData[key] as List).isNotEmpty)
                       SectionListItem(
                         entries: List<String>.from(controller.userData[key] as List),
                         onEdit: (index) {
                           _editModeManager.editEntryIndex = index;
-                          controller.editEntry(context, key, index);
+                          controller.editEntry(context, key, index); // ✅ 3 args
                         },
                         onDelete: (index) => controller.deleteEntry(key, index),
-                      ),
+                      )
+                    else if (controller.userData[key] is Map && (controller.userData[key] as Map).isNotEmpty)
+                      SectionListItem(
+                        entries: (controller.userData[key] as Map).entries
+                            .map((e) => "${e.key}: ${e.value}")
+                            .toList(),
+                        onEdit: (_) {}, // ✅ provide empty function instead of null
+                        onDelete: (_) {}, // ✅ same here
+                      )
+                    else if (controller.userData[key]?.toString().trim().isNotEmpty ?? false)
+                        SectionListItem(
+                          entries: [controller.userData[key].toString()],
+                          onEdit: (index) {
+                            _editModeManager.editEntryIndex = index;
+                            controller.editEntry(context, key, index); // ✅ 3 args
+                          },
+                          onDelete: (_) {}, // ✅ required non-null
+                        ),
+
                   ],
                 ),
               ),

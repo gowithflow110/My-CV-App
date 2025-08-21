@@ -10,7 +10,7 @@ class EditModeManager {
   final FirestoreService _firestoreService = FirestoreService();
 
   bool isEditMode = false;
-  int? editEntryIndex; // null means new entry; int means editing existing entry
+  int? editEntryIndex; // for lists
   String? editField;
   dynamic previousData;
 
@@ -43,30 +43,40 @@ class EditModeManager {
       }
 
       if (editField != null) {
-        final idx = controller.sections.indexWhere((s) => s['key'] == editField);
-        if (idx != -1) {
-          controller.currentIndex = idx;
-        }
+        final section = controller.sections
+            .firstWhere((s) => s['key'] == editField);
+
+        controller.currentIndex =
+            controller.sections.indexOf(section);
 
         previousData = controller.userData[editField!];
 
-        final isMultiple = controller.sections
-            .firstWhere((s) => s['key'] == editField)['multiple'] as bool;
+        final isMultiple = section['multiple'] as bool;
+        final isMap = section['map'] == true; // NEW
 
-        if (isMultiple) {
-          // Keep existing entries visible
+        if (isMap) {
+          // Ensure we always have a map for editing
+          if (previousData is Map<String, dynamic>) {
+            controller.userData[editField!] =
+            Map<String, String>.from(previousData);
+          } else {
+            controller.userData[editField!] = {};
+          }
+          controller.transcription = ''; // map sections handled field by field
+        } else if (isMultiple) {
           if (previousData is List) {
-            controller.userData[editField!] = List<String>.from(previousData as List);
-          } else if (previousData is String && previousData!.isNotEmpty) {
-            controller.userData[editField!] = [previousData!];
+            controller.userData[editField!] =
+            List<String>.from(previousData as List);
+          } else if (previousData is String && previousData.isNotEmpty) {
+            controller.userData[editField!] = [previousData];
           } else {
             controller.userData[editField!] = [];
           }
 
-          // If editing a specific entry, preload it
           if (args.containsKey('editIndex') && args['editIndex'] != null) {
             editEntryIndex = args['editIndex'] as int;
-            final list = List<String>.from(controller.userData[editField!] ?? []);
+            final list =
+            List<String>.from(controller.userData[editField!] ?? []);
             if (editEntryIndex! < list.length) {
               controller.transcription = list[editEntryIndex!];
             }
@@ -86,15 +96,26 @@ class EditModeManager {
   Future<void> saveUpdatesAndExit() async {
     if (!isEditMode || editField == null) return;
 
-    final key = controller.sections[controller.currentIndex]['key'];
-    final isMultiple =
-    controller.sections[controller.currentIndex]['multiple'] as bool;
-    final required =
-    controller.sections[controller.currentIndex]['required'] as bool;
+    final section = controller.sections[controller.currentIndex];
+    final key = section['key'];
+    final isMultiple = section['multiple'] as bool;
+    final required = section['required'] as bool;
+    final isMap = section['map'] == true; // NEW
     final trimmedValue = controller.transcription.trim();
 
-    bool hasValidData;
-    if (isMultiple) {
+    bool hasValidData = false;
+
+    if (isMap) {
+      final entries = Map<String, String>.from(
+          controller.userData[key] ?? {});
+
+      // If transcription refers to a single field update (optional improvement),
+      // you would handle it here. For now, we trust the map is updated elsewhere.
+      hasValidData = entries.values.any((v) => v.trim().isNotEmpty);
+      if (hasValidData) {
+        controller.userData[key] = entries;
+      }
+    } else if (isMultiple) {
       final entries = List<String>.from(controller.userData[key] ?? []);
       if (trimmedValue.isNotEmpty) {
         if (editEntryIndex != null && editEntryIndex! < entries.length) {
@@ -118,10 +139,11 @@ class EditModeManager {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           backgroundColor: Colors.orange,
-          content: Text("This section is required. Please enter at least one value."),
+          content:
+          Text("This section is required. Please enter at least one value."),
         ),
       );
-      return; // prevent saving if validation fails
+      return;
     }
 
     try {
