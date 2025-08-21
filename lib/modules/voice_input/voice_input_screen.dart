@@ -8,6 +8,7 @@ import 'widgets/section_list_item.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../models/cv_model.dart';
 import 'edit_mode_manager.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class VoiceInputScreen extends StatefulWidget {
   final String? startSectionKey;
@@ -346,7 +347,7 @@ class _VoiceInputScreenState extends State<VoiceInputScreen> {
                         ],
                       ),
 
-                    if (!controller.isManualInput && controller.isSpeechAvailable)
+                    if (!controller.isManualInput)
                       Center(
                         child: IconButton(
                           iconSize: 60,
@@ -377,6 +378,17 @@ class _VoiceInputScreenState extends State<VoiceInputScreen> {
                               return;
                             }
 
+                            // Request microphone permission first
+                            bool micGranted = await Permission.microphone.request().isGranted;
+                            if (!micGranted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text("Microphone permission is required."),
+                                ),
+                              );
+                              return;
+                            }
+
                             if (!controller.isListening) {
                               await _logEvent("start_listening", params: {"section": key});
                             } else {
@@ -387,6 +399,7 @@ class _VoiceInputScreenState extends State<VoiceInputScreen> {
                           },
                         ),
                       ),
+
 
                     const SizedBox(height: 20),
 

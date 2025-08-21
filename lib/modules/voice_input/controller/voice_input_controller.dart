@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../../services/firestore_service.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class VoiceInputController extends ChangeNotifier {
   final FirestoreService _firestoreService = FirestoreService();
@@ -177,13 +178,36 @@ class VoiceInputController extends ChangeNotifier {
     notifyListeners();
   }
 
+
+// Inside VoiceInputController class:
+  Future<bool> _requestMicPermission() async {
+    var status = await Permission.microphone.status;
+    if (!status.isGranted) {
+      status = await Permission.microphone.request();
+    }
+    return status.isGranted;
+  }
+
+
+
   /// Starts listening to speech and updates transcription in real time
   Future<void> startListening(BuildContext context) async {
-    if (_isManualInput) {
-      // If manual input mode is on, do not start listening
+    if (_isManualInput) return;
+
+    // 1️⃣ Request mic permission
+    if (!await _requestMicPermission()) {
+      micFailed = true;
+      notifyListeners();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Microphone permission denied."),
+          duration: Duration(seconds: 3),
+        ),
+      );
       return;
     }
 
+    // 2️⃣ Check internet
     if (!await hasInternet()) {
       micFailed = true;
       notifyListeners();
@@ -195,6 +219,7 @@ class VoiceInputController extends ChangeNotifier {
       return;
     }
 
+    // 3️⃣ Initialize speech
     await initializeSpeech();
     await Future.delayed(const Duration(milliseconds: 100));
 
@@ -219,6 +244,7 @@ class VoiceInputController extends ChangeNotifier {
       listenMode: stt.ListenMode.dictation,
     );
   }
+
 
   /// Stops speech listening
   Future<void> stopListening() async {
