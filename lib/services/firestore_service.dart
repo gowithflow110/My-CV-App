@@ -16,6 +16,13 @@ class FirestoreService {
     _firestore = mockInstance;
   }
 
+
+  // 6) Helper to return the generated CV DocumentReference (reuse in UI)
+  DocumentReference generatedCvDocRef(String userId, String cvId) {
+    return _firestore.collection('users').doc(userId).collection('aiGeneratedCVs').doc(cvId);
+  }
+
+
   // ---------------------------------------------------------
   // 🗂 SINGLE CURRENT CV LOGIC
   // ---------------------------------------------------------
@@ -48,6 +55,7 @@ class FirestoreService {
     }
   }
 
+  // 1) Fix saveSection to use consistent keys and timestamps
   Future<void> saveSection(String userId, String cvId, Map<String, dynamic> cvData) async {
     try {
       if (userId.isEmpty) return;
@@ -55,19 +63,28 @@ class FirestoreService {
       final docRef = _firestore.collection('users').doc(userId);
       final snapshot = await docRef.get();
 
-      if (snapshot.exists && snapshot.data() != null) {
-        final existingData = snapshot.data();
-        if (mapEquals(existingData?['cvData'], cvData)) {
-          debugPrint("⏩ No changes detected, skipping save...");
-          return;
-        }
+      // Convert existing cvData to Map for safe comparison
+      final existing = snapshot.data();
+      final existingCvData = existing != null && existing['cvData'] is Map
+          ? Map<String, dynamic>.from(existing['cvData'])
+          : <String, dynamic>{};
+
+      if (mapEquals(existingCvData, cvData)) {
+        debugPrint("⏩ No changes detected, skipping save...");
+        return;
       }
+
+      // Preserve existing createdAt if present, otherwise set server createdAt
+      final createdAt = existing != null && existing['createdAt'] != null
+          ? existing['createdAt']
+          : FieldValue.serverTimestamp();
 
       await docRef.set({
         'cvId': cvId,
         'cvData': cvData,
-        'isComplete': false,
-        'timestamp': FieldValue.serverTimestamp(),
+        'isCompleted': false, // standardized key (was isComplete)
+        'createdAt': createdAt,
+        'updatedAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
 
       debugPrint("✅ CV section saved successfully.");
@@ -75,6 +92,7 @@ class FirestoreService {
       debugPrint('❌ Error saving CV section: $e');
     }
   }
+
 
   Future<void> markCVComplete(String userId, String cvId) async {
     try {
@@ -89,19 +107,22 @@ class FirestoreService {
     }
   }
 
+  // 4) Fix clearLastCV to use standardized key and updatedAt
   Future<void> clearLastCV(String userId) async {
     try {
       if (userId.isEmpty) return;
       await _firestore.collection('users').doc(userId).update({
         'cvId': null,
         'cvData': {},
-        'isComplete': false,
+        'isCompleted': false,
+        'updatedAt': FieldValue.serverTimestamp(),
       });
       debugPrint("✅ Last CV cleared successfully.");
     } catch (e) {
       debugPrint('❌ Error clearing last CV: $e');
     }
   }
+
 
   // ---------------------------------------------------------
   // 📚 LIBRARY CV LOGIC (Two-folder separation, AI overwrite)
@@ -206,25 +227,118 @@ class FirestoreService {
     }
   }
 
-  /// Delete a CV from either folder
-  Future<void> deleteCV(String userId, {bool isGenerated = false}) async {
+// 5) Delete CV: accept docId for library deletion
+  Future<void> deleteCV(String userId, {bool isGenerated = false, String? docId}) async {
     try {
       if (userId.isEmpty) return;
 
       final collectionName = isGenerated ? 'aiGeneratedCVs' : 'libraryCVs_clean';
-      final docId = isGenerated ? "latestAI_CV" : null;
-      if (isGenerated && docId != null) {
-        await _firestore
-            .collection('users')
-            .doc(userId)
-            .collection(collectionName)
-            .doc(docId)
-            .delete();
+      final theDocId = docId ?? (isGenerated ? "latestAI_CV" : null);
+
+      if (theDocId == null) {
+        debugPrint('⚠ deleteCV called without docId for library deletion');
+        return;
       }
 
-      debugPrint("✅ CV deleted from $collectionName");
+      await _firestore.collection('users').doc(userId).collection(collectionName).doc(theDocId).delete();
+      debugPrint("✅ CV deleted from $collectionName:$theDocId");
     } catch (e) {
       debugPrint('❌ Error deleting CV: $e');
     }
   }
+
+
+  // 2) Add method to update a *single section* of a generated CV document
+  Future<void> updateGeneratedCvSection(String userId, String cvId, String section, dynamic value, {String? editorId}) async {
+    try {
+      if (userId.isEmpty || cvId.isEmpty) return;
+      final genRef = _firestore
+          .collection('users')
+          .doc(userId)
+          .collection('aiGeneratedCVs') // keep consistent with service
+          .doc(cvId);
+
+      // Try to update; if doc not exist, create with merge
+      await genRef.set({
+        'cvId': cvId,
+        'cvData': {section: value},
+        'updatedAt': FieldValue.serverTimestamp(),
+        'audit': {
+          section.replaceAll('.', '_'): {
+            'editedAt': FieldValue.serverTimestamp(),
+            'editedBy': editorId ?? userId,
+            'source': 'manual',
+          }
+        }
+      }, SetOptions(merge: true));
+    } catch (e) {
+      debugPrint('❌ Error updating generated CV section: $e');
+    }
+  }
+
+
+  // 3) Add method to replace whole generated CV data (if needed)
+  Future<void> updateGeneratedCvData(String userId, String cvId, Map<String, dynamic> cvData, {String? editorId}) async {
+    try {
+      if (userId.isEmpty || cvId.isEmpty) return;
+      final genRef = _firestore
+          .collection('users')
+          .doc(userId)
+          .collection('aiGeneratedCVs')
+          .doc(cvId);
+
+      await genRef.set({
+        'cvId': cvId,
+        'cvData': cvData,
+        'updatedAt': FieldValue.serverTimestamp(),
+        'auditMeta': {
+          'lastEditedBy': editorId ?? userId,
+          'lastEditAt': FieldValue.serverTimestamp(),
+        }
+      }, SetOptions(merge: true));
+    } catch (e) {
+      debugPrint('❌ Error updating generated CV data: $e');
+    }
+  }
+
+
+  // 7) Convenience: getLastCVModel wrapping CVModel.fromFirestore (if you want CVModel directly)
+  Future<CVModel?> getLastCVModel(String userId) async {
+    try {
+      if (userId.isEmpty) return null;
+      final docRef = _firestore.collection('users').doc(userId);
+      final ds = await docRef.get();
+      if (!ds.exists) return null;
+      // If your user doc stores top-level cvData / cvId
+      final data = ds.data()!;
+      final fakeDoc = ds; // CVModel.fromFirestore expects a DocumentSnapshot shaped like a CV doc
+      // Build a fake DocumentSnapshot-like map to pass into CVModel.fromFirestore:
+      final combined = {
+        ...data,
+        // ensure cvId, userId exist (CVModel.fromFirestore expects them in the document)
+        'cvId': data['cvId'] ?? '',
+        'userId': userId,
+        'cvData': data['cvData'] ?? {},
+        'createdAt': data['createdAt'],
+        'updatedAt': data['updatedAt'],
+        'isCompleted': data['isCompleted'] ?? false,
+      };
+      // We can't easily create a DocumentSnapshot here; instead build CVModel manually:
+      return CVModel(
+        cvId: combined['cvId'] ?? '',
+        userId: combined['userId'] ?? userId,
+        cvData: Map<String, dynamic>.from(combined['cvData'] ?? {}),
+        isCompleted: combined['isCompleted'] ?? false,
+        aiEnhancedText: combined['aiEnhancedText'],
+        createdAt: (combined['createdAt'] is Timestamp) ? (combined['createdAt'] as Timestamp).toDate() : DateTime.now(),
+        updatedAt: (combined['updatedAt'] is Timestamp) ? (combined['updatedAt'] as Timestamp).toDate() : DateTime.now(),
+      );
+    } catch (e) {
+      debugPrint('❌ Error in getLastCVModel: $e');
+      return null;
+    }
+  }
+
+
+
 }
