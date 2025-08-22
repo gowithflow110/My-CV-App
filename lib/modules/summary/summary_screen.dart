@@ -49,7 +49,7 @@ class _SummaryScreenState extends State<SummaryScreen> {
                 ),
                 child: Padding(
                   padding:
-                      const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                  const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -62,9 +62,9 @@ class _SummaryScreenState extends State<SummaryScreen> {
                       ),
                       Tooltip(
                         message:
-                            "AI will expand and improve your input automatically.",
+                        "AI will expand and improve your input automatically.",
                         child:
-                            Icon(Icons.info_outline, color: Colors.blue[700]),
+                        Icon(Icons.info_outline, color: Colors.blue[700]),
                       ),
                     ],
                   ),
@@ -85,7 +85,7 @@ class _SummaryScreenState extends State<SummaryScreen> {
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(12),
                             color:
-                                isExpanded ? Colors.blue.shade50 : Colors.white,
+                            isExpanded ? Colors.blue.shade50 : Colors.white,
                             boxShadow: [
                               BoxShadow(
                                 color: Colors.black12,
@@ -135,20 +135,19 @@ class _SummaryScreenState extends State<SummaryScreen> {
                                           onPressed: () async {
                                             final key = section['key'];
                                             final content =
-                                                _cvModel.cvData[key];
+                                            _cvModel.cvData[key];
                                             dynamic previousData;
 
                                             if (content is List) {
                                               previousData =
-                                              List<String>.from((content?.textList ?? []));
-
+                                              List<String>.from(content);
                                             } else {
                                               previousData =
                                                   content?.toString() ?? '';
                                             }
 
                                             final result =
-                                                await Navigator.pushNamed(
+                                            await Navigator.pushNamed(
                                               context,
                                               AppRoutes.voiceInput,
                                               arguments: {
@@ -163,18 +162,9 @@ class _SummaryScreenState extends State<SummaryScreen> {
                                                 _cvModel = result;
                                               });
                                             } else if (result
-                                                is Map<String, dynamic>) {
+                                            is Map<String, dynamic>) {
                                               setState(() {
-                                                _cvModel.cvData.addAll(
-                                                  (result as Map<String, dynamic>).map<String, CVSection>(
-                                                        (key, value) {
-                                                      if (value is CVSection) return MapEntry(key, value);
-                                                      if (value is Map<String, dynamic>) return MapEntry(key, CVSection.fromMap(value));
-                                                      return MapEntry(key, CVSection(text: value.toString()));
-                                                    },
-                                                  ),
-                                                );
-
+                                                _cvModel.cvData.addAll(result);
                                               });
                                             }
                                           },

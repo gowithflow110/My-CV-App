@@ -26,11 +26,11 @@ class CVItem extends StatelessWidget {
     return ListTile(
       leading: showCheckbox
           ? Checkbox(
-              value: isSelected,
-              onChanged: onSelectChanged,
-            )
+        value: isSelected,
+        onChanged: onSelectChanged,
+      )
           : null, // hide checkbox when not in selection mode
-      title: Text(cv.cvData['name']?.text ?? cv.cvData['header']?.text ?? "Untitled CV"),
+      title: Text(cv.cvData['name'] ?? cv.cvData['header']?['name'] ?? "Untitled CV"),
       subtitle: Text(
         '${cv.createdAt.day}-${cv.createdAt.month}-${cv.createdAt.year}',
         style: const TextStyle(fontSize: 12),
@@ -38,18 +38,18 @@ class CVItem extends StatelessWidget {
       trailing: showCheckbox
           ? null // hide 3-dot menu during selection mode
           : PopupMenuButton<String>(
-              onSelected: (value) {
-                if (value == 'view') {
-                  onView();
-                } else if (value == 'delete') {
-                  onDelete();
-                }
-              },
-              itemBuilder: (context) => const [
-                PopupMenuItem(value: 'view', child: Text('View')),
-                PopupMenuItem(value: 'delete', child: Text('Delete')),
-              ],
-            ),
+        onSelected: (value) {
+          if (value == 'view') {
+            onView();
+          } else if (value == 'delete') {
+            onDelete();
+          }
+        },
+        itemBuilder: (context) => const [
+          PopupMenuItem(value: 'view', child: Text('View')),
+          PopupMenuItem(value: 'delete', child: Text('Delete')),
+        ],
+      ),
     );
   }
 }

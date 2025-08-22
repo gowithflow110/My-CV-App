@@ -1,57 +1,15 @@
+// lib/models/cv_model.dart
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-/// Represents a single CV section
-class CVSection {
-  String text;
-  bool isLoading;
-
-  CVSection({
-    required this.text,
-    this.isLoading = false,
-  });
-
-  CVSection.fromMap(Map<String, dynamic> map)
-      : text = map['text'] ?? '',
-        isLoading = map['isLoading'] ?? false;
-
-  Map<String, dynamic> toMap() {
-    return {
-      'text': text,
-      'isLoading': isLoading,
-    };
-  }
-
-  CVSection copyWith({
-    String? text,
-    bool? isLoading,
-  }) {
-    return CVSection(
-      text: text ?? this.text,
-      isLoading: isLoading ?? this.isLoading,
-    );
-  }
-
-  /// Helper: split text into a list of entries
-  List<String> get textList =>
-      text
-          .split(RegExp(r'\n|,'))
-          .map((e) => e.trim())
-          .where((e) => e.isNotEmpty)
-          .toList();
-
-  /// Helper: join a list of strings into text
-  static String joinList(List<String> items) => items.join(', ');
-}
-
-/// Represents a full CV
 class CVModel {
-  final String cvId;
-  final String userId;
-  final Map<String, CVSection> cvData; // Map of sectionKey -> CVSection
-  final bool isCompleted;
-  final String? aiEnhancedText;
-  final DateTime createdAt;
-  final DateTime updatedAt;
+  final String cvId;                // Unique CV ID (same pattern as existing: cv_<timestamp>)
+  final String userId;              // Owner's Firebase UID
+  final Map<String, dynamic> cvData; // All CV sections (name, contact, skills, etc.)
+  final bool isCompleted;           // Whether CV was marked complete
+  final String? aiEnhancedText;     // Optional: AI-enhanced version
+  final DateTime createdAt;         // Timestamp when CV was first created
+  final DateTime updatedAt;         // Timestamp when CV was last updated
 
   CVModel({
     required this.cvId,
@@ -63,24 +21,14 @@ class CVModel {
     required this.updatedAt,
   });
 
-  /// Create CVModel from Firestore snapshot
+  /// ✅ Create a CVModel from Firestore data
   factory CVModel.fromFirestore(DocumentSnapshot doc) {
-    final data = doc.data() as Map<String, dynamic>? ?? {};
-
-    final cvDataRaw = data['cvData'] as Map<String, dynamic>? ?? {};
-    final cvData = cvDataRaw.map(
-          (key, value) => MapEntry(
-        key,
-        value is Map<String, dynamic>
-            ? CVSection.fromMap(value)
-            : CVSection(text: value?.toString() ?? ''),
-      ),
-    );
+    final data = doc.data() as Map<String, dynamic>;
 
     return CVModel(
       cvId: data['cvId'] ?? '',
       userId: data['userId'] ?? '',
-      cvData: cvData,
+      cvData: Map<String, dynamic>.from(data['cvData'] ?? {}),
       isCompleted: data['isCompleted'] ?? false,
       aiEnhancedText: data['aiEnhancedText'],
       createdAt: (data['createdAt'] is Timestamp)
@@ -92,25 +40,24 @@ class CVModel {
     );
   }
 
-  /// Convert CVModel to Map for Firestore
+  /// ✅ Convert CVModel to Firestore format
   Map<String, dynamic> toMap() {
-    final cvDataMap = cvData.map((key, section) => MapEntry(key, section.toMap()));
     return {
       'cvId': cvId,
       'userId': userId,
-      'cvData': cvDataMap,
+      'cvData': cvData,
       'isCompleted': isCompleted,
       'aiEnhancedText': aiEnhancedText,
-      'createdAt': Timestamp.fromDate(createdAt),
-      'updatedAt': Timestamp.fromDate(updatedAt),
+      'createdAt': createdAt is DateTime ? Timestamp.fromDate(createdAt) : createdAt,
+      'updatedAt': updatedAt is DateTime ? Timestamp.fromDate(updatedAt) : updatedAt,
     };
   }
 
-  /// Copy CVModel with optional overrides
+  /// ✅ Create a copy of CVModel with updated fields
   CVModel copyWith({
     String? cvId,
     String? userId,
-    Map<String, CVSection>? cvData,
+    Map<String, dynamic>? cvData,
     bool? isCompleted,
     String? aiEnhancedText,
     DateTime? createdAt,
@@ -126,7 +73,4 @@ class CVModel {
       updatedAt: updatedAt ?? this.updatedAt,
     );
   }
-
-  /// Utility: Get plain map of section texts
-  Map<String, String> get plainTextMap => cvData.map((key, section) => MapEntry(key, section.text));
 }

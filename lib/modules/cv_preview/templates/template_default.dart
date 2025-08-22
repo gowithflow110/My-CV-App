@@ -51,86 +51,47 @@ class TemplateDefault {
     final data = cv.cvData;
 
     return [
-      // Header
       {
         'type': 'header',
         'data': {
-          'name': data['fullName']?.text ?? '',
-          'summary': data['summary']?.text ?? '',
-        },
+          'name': data['fullName'] ?? '',
+          'summary': data['summary'] ?? '',
+        }
       },
-
-      // Contact
-      {
-        'type': 'contact',
-        'data': data['contact'] ?? {},
-      },
-
-      // Skills
-      {
-        'type': 'skills',
-        'data': List<String>.from(
-          (data['skills']?.textList ?? []),
-        ),
-      },
-
-      // Experience
+      {'type': 'contact', 'data': data['contact'] ?? {}},
+      {'type': 'skills', 'data': List<String>.from(data['skills'] ?? [])},
       {
         'type': 'experience',
-        'data': ExperienceSanitizer.sanitizeList(
-          (data['experience']?.textList ?? []).map((e) => {'title': e}).toList(),
-        ),
+        'data': ExperienceSanitizer.sanitizeList(data['experience']),
       },
-
-      // Projects
       {
         'type': 'projects',
         'data': List<Map<String, dynamic>>.from(
-          (data['projects']?.textList ?? []).map((projText) {
-            return {
-              'title': projText,
-              'description': '', // You can parse description if needed
-            };
+          (data['projects'] ?? []).map((proj) => {
+            'title': proj['name'] ?? '',
+            'description': proj['description'] ?? '',
           }),
-        ),
+        )
       },
-
-      // Education
       {
         'type': 'education',
         'data': List<Map<String, dynamic>>.from(
-          (data['education']?.textList ?? []).map((eduText) => {
-            'degree': eduText,
-            'institution': '',
-            'location': '',
-            'date': '',
-            'gpa': '',
+          (data['education'] ?? []).map((edu) => {
+            'degree': edu['degree'] ?? '',
+            'institution': edu['institution'] ?? '',
+            'location': edu['location'] ?? '',
+            'date': edu['year'] ?? '',
+            'gpa': edu['gpa'] ?? '',
           }),
-        ),
+        )
       },
-
-      // Certifications
       {
         'type': 'certifications',
-        'data': List<Map<String, dynamic>>.from(
-          (data['certifications']?.textList ?? []).map((certText) => {
-            'title': certText,
-            'issuer': '',
-            'date': '',
-          }),
-        ),
+        'data': List<Map<String, dynamic>>.from(data['certifications'] ?? []),
       },
-
-      // Languages
-      {
-        'type': 'languages',
-        'data': List<String>.from(
-          data['languages']?.textList ?? [],
-        ),
-      },
+      {'type': 'languages', 'data': List<String>.from(data['languages'] ?? [])},
     ];
   }
-
 
   // ---------------- SECTION RENDERERS ----------------
   pw.Widget _buildPdfSection(Map<String, dynamic> section) {
@@ -164,7 +125,7 @@ class TemplateDefault {
 
         return pw.Container(
           width: double.infinity,
-          color: PdfColors.black,
+          color: PdfColor.fromInt(0xFF0D47A1), // Dark Blue
           padding: const pw.EdgeInsets.symmetric(vertical: 10, horizontal: 16),
           child: pw.Wrap(
             spacing: 20,
@@ -192,7 +153,8 @@ class TemplateDefault {
                         text,
                         style: pw.TextStyle(
                           color: PdfColors.white,
-                          fontSize: 10,
+                          fontSize: 9,
+                          fontWeight: pw.FontWeight.bold,
                         ),
                       ),
                     ),
@@ -208,43 +170,46 @@ class TemplateDefault {
           final items = List<String>.from(data as List);
           if (items.isEmpty) return pw.SizedBox();
 
-          const cols = 4;
-          final usableWidth =
-              PdfPageFormat.a4.availableWidth - 48; // page - margins
-          final colWidth = usableWidth / cols;
-
-          final rows = <pw.TableRow>[];
-          for (int i = 0; i < items.length; i += cols) {
-            final cells = <pw.Widget>[];
-            for (int j = 0; j < cols; j++) {
-              final idx = i + j;
-              if (idx < items.length) {
-                cells.add(
-                  pw.Container(
-                    width: colWidth,
-                    padding: const pw.EdgeInsets.symmetric(vertical: 6),
-                    alignment: pw.Alignment.centerLeft,
-                    child: pw.Text(
-                      items[idx],
-                      textAlign: pw.TextAlign.left,
-                      style: pw.TextStyle(fontSize: 10),
-                    ),
-                  ),
-                );
-              } else {
-                cells.add(pw.SizedBox(width: colWidth));
-              }
-            }
-            rows.add(pw.TableRow(children: cells));
-          }
-
           return pw.Padding(
             padding: const pw.EdgeInsets.only(top: 20),
             child: _pdfSectionBlock(
               "Skills",
-              pw.Table(
-                defaultColumnWidth: pw.FixedColumnWidth(colWidth),
-                children: rows,
+              pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                children: items.map((skill) {
+                  return pw.Padding(
+                    padding: const pw.EdgeInsets.only(bottom: 6),
+                    child: pw.Row(
+                      crossAxisAlignment: pw.CrossAxisAlignment.center,
+                      children: [
+                        // Diamond bullet (center aligned)
+                        pw.SizedBox(
+                          width: 12,
+                          height: 12,
+                          child: pw.Center(
+                            child: pw.Transform.rotateBox(
+                              angle: 0.785, // 45° = diamond
+                              child: pw.Container(
+                                width: 6,
+                                height: 6,
+                                color: PdfColors.black,
+                              ),
+                            ),
+                          ),
+                        ),
+                        pw.SizedBox(
+                            width: 12), // indent space between bullet & text
+                        // Skill text
+                        pw.Expanded(
+                          child: pw.Text(
+                            skill,
+                            style: pw.TextStyle(fontSize: 10),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }).toList(),
               ),
             ),
           );
@@ -254,176 +219,246 @@ class TemplateDefault {
         return _buildExperience(data);
 
       case 'projects':
-        return _pdfSectionBlock(
-          "Projects",
-          pw.Column(
-            crossAxisAlignment: pw.CrossAxisAlignment.start,
-            children: (data as List).map<pw.Widget>((proj) {
-              return pw.Padding(
-                padding: const pw.EdgeInsets.only(bottom: 10),
-                child: pw.Row(
-                  crossAxisAlignment: pw.CrossAxisAlignment.start,
-                  children: [
-                    pw.Container(
-                      width: 2,
-                      height: 28,
-                      color: PdfColors.black,
-                      margin: const pw.EdgeInsets.only(right: 8, top: 2),
-                    ),
-                    pw.Expanded(
-                      child: pw.Column(
-                        crossAxisAlignment: pw.CrossAxisAlignment.start,
-                        children: [
-                          pw.Text(
-                            proj['title'] ?? '',
-                            style: pw.TextStyle(
-                              fontSize: 12,
-                              fontWeight: pw.FontWeight.bold,
-                            ),
-                          ),
-                          if ((proj['description'] ?? '').toString().isNotEmpty)
-                            pw.Text(
-                              proj['description'] ?? '',
-                              style: pw.TextStyle(fontSize: 10),
-                            ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            }).toList(),
+        final widgets = <pw.Widget>[];
+
+        // Add section heading
+        widgets.add(
+          pw.Text(
+            "PROJECTS",
+            style: pw.TextStyle(
+              fontSize: 14,
+              fontWeight: pw.FontWeight.bold,
+              color: PdfColors.black,
+            ),
           ),
+        );
+        widgets.add(pw.SizedBox(height: 6));
+
+        // Add each project individually
+        for (final proj in data as List) {
+          widgets.add(
+            pw.Padding(
+              padding: const pw.EdgeInsets.only(bottom: 10),
+              child: pw.Row(
+                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                children: [
+                  pw.Container(
+                    width: 2,
+                    height: 28,
+                    color: PdfColors.black,
+                    margin: const pw.EdgeInsets.only(right: 8, top: 2),
+                  ),
+                  pw.Expanded(
+                    child: pw.Column(
+                      crossAxisAlignment: pw.CrossAxisAlignment.start,
+                      children: [
+                        pw.Text(
+                          proj['title'] ?? '',
+                          style: pw.TextStyle(
+                            fontSize: 12,
+                            fontWeight: pw.FontWeight.bold,
+                          ),
+                        ),
+                        if ((proj['description'] ?? '').toString().isNotEmpty)
+                          pw.Text(
+                            proj['description'] ?? '',
+                            style: const pw.TextStyle(fontSize: 10),
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
+        return pw.Column(
+          crossAxisAlignment: pw.CrossAxisAlignment.start,
+          children: widgets,
         );
 
       case 'education':
-        return _pdfSectionBlock(
-          "Education",
-          pw.Column(
-            crossAxisAlignment: pw.CrossAxisAlignment.start,
-            children: (data as List).map<pw.Widget>((edu) {
-              return pw.Padding(
-                padding: const pw.EdgeInsets.only(bottom: 10),
-                child: pw.Row(
-                  crossAxisAlignment: pw.CrossAxisAlignment.start,
-                  children: [
-                    pw.Container(
-                      width: 2,
-                      height: 40,
-                      color: PdfColors.black,
-                      margin: const pw.EdgeInsets.only(right: 8, top: 2),
-                    ),
-                    pw.Expanded(
-                      child: pw.Row(
-                        mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                        crossAxisAlignment: pw.CrossAxisAlignment.start,
-                        children: [
-                          pw.Column(
-                            crossAxisAlignment: pw.CrossAxisAlignment.start,
-                            children: [
-                              pw.Text(
-                                edu['degree'] ?? '',
-                                style: pw.TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: pw.FontWeight.bold,
-                                ),
-                              ),
-                              pw.Text(
-                                (edu['location'] ?? '').toString().isNotEmpty
-                                    ? "${edu['institution']}, ${edu['location']}"
-                                    : (edu['institution'] ?? ''),
-                                style: _italic(10),
-                              ),
-                              if ((edu['gpa'] ?? '').isNotEmpty)
-                                pw.Text("GPA / Marks: ${edu['gpa']}",
-                                    style: _italic(9)),
-                            ],
-                          ),
-                          pw.Text(edu['date'] ?? '', style: _italic(10)),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            }).toList(),
+        final widgets = <pw.Widget>[];
+
+        // Add section heading first
+        widgets.add(
+          pw.Text(
+            "EDUCATION",
+            style: pw.TextStyle(
+              fontSize: 14,
+              fontWeight: pw.FontWeight.bold,
+              color: PdfColors.black,
+            ),
           ),
+        );
+        widgets.add(pw.SizedBox(height: 6));
+
+        // Add each entry individually so they can break
+        for (final edu in data as List) {
+          widgets.add(
+            pw.Padding(
+              padding: const pw.EdgeInsets.only(bottom: 10),
+              child: pw.Row(
+                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                children: [
+                  pw.Container(
+                    width: 2,
+                    height: 40,
+                    color: PdfColors.black,
+                    margin: const pw.EdgeInsets.only(right: 8, top: 2),
+                  ),
+                  pw.Expanded(
+                    child: pw.Row(
+                      mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: pw.CrossAxisAlignment.start,
+                      children: [
+                        pw.Column(
+                          crossAxisAlignment: pw.CrossAxisAlignment.start,
+                          children: [
+                            pw.Text(
+                              edu['degree'] ?? '',
+                              style: pw.TextStyle(
+                                fontSize: 12,
+                                fontWeight: pw.FontWeight.bold,
+                              ),
+                            ),
+                            pw.Text(
+                              (edu['location'] ?? '').toString().isNotEmpty
+                                  ? "${edu['institution']}, ${edu['location']}"
+                                  : (edu['institution'] ?? ''),
+                              style: _italic(10),
+                            ),
+                            if ((edu['gpa'] ?? '').isNotEmpty)
+                              pw.Text("GPA / Marks: ${edu['gpa']}",
+                                  style: _italic(9)),
+                          ],
+                        ),
+                        pw.Text(edu['date'] ?? '', style: _italic(10)),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
+        return pw.Column(
+          crossAxisAlignment: pw.CrossAxisAlignment.start,
+          children: widgets,
         );
 
       case 'certifications':
-        return _pdfSectionBlock(
-          "Certifications",
-          pw.Column(
-            crossAxisAlignment: pw.CrossAxisAlignment.start,
-            children: (data as List).map<pw.Widget>((cert) {
-              return pw.Padding(
-                padding: const pw.EdgeInsets.only(bottom: 10),
-                child: pw.Row(
-                  crossAxisAlignment: pw.CrossAxisAlignment.start,
-                  children: [
-                    pw.Container(
-                      width: 2,
-                      height: 30,
-                      color: PdfColors.black,
-                      margin: const pw.EdgeInsets.only(right: 8, top: 2),
-                    ),
-                    pw.Expanded(
-                      child: pw.Row(
-                        mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                        crossAxisAlignment: pw.CrossAxisAlignment.start,
-                        children: [
-                          pw.Column(
-                            crossAxisAlignment: pw.CrossAxisAlignment.start,
-                            children: [
-                              pw.Text(
-                                cert['title'] ?? '',
-                                style: pw.TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: pw.FontWeight.bold,
-                                ),
-                              ),
-                              pw.Text(cert['issuer'] ?? '', style: _italic(10)),
-                            ],
-                          ),
-                          pw.Text(cert['date'] ?? '', style: _italic(10)),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            }).toList(),
+        final widgets = <pw.Widget>[];
+
+        // Add section heading
+        widgets.add(
+          pw.Text(
+            "CERTIFICATIONS",
+            style: pw.TextStyle(
+              fontSize: 14,
+              fontWeight: pw.FontWeight.bold,
+              color: PdfColors.black,
+            ),
           ),
+        );
+        widgets.add(pw.SizedBox(height: 6));
+
+        // Add each certification separately
+        for (final cert in data as List) {
+          widgets.add(
+            pw.Padding(
+              padding: const pw.EdgeInsets.only(bottom: 10),
+              child: pw.Row(
+                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                children: [
+                  pw.Container(
+                    width: 2,
+                    height: 30,
+                    color: PdfColors.black,
+                    margin: const pw.EdgeInsets.only(right: 8, top: 2),
+                  ),
+                  pw.Expanded(
+                    child: pw.Row(
+                      mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: pw.CrossAxisAlignment.start,
+                      children: [
+                        pw.Column(
+                          crossAxisAlignment: pw.CrossAxisAlignment.start,
+                          children: [
+                            pw.Text(
+                              cert['title'] ?? '',
+                              style: pw.TextStyle(
+                                fontSize: 12,
+                                fontWeight: pw.FontWeight.bold,
+                              ),
+                            ),
+                            if ((cert['issuer'] ?? '').toString().isNotEmpty)
+                              pw.Text(cert['issuer'], style: _italic(10)),
+                          ],
+                        ),
+                        if ((cert['date'] ?? '').toString().isNotEmpty)
+                          pw.Text(cert['date'], style: _italic(10)),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
+        return pw.Column(
+          crossAxisAlignment: pw.CrossAxisAlignment.start,
+          children: widgets,
         );
 
       case 'languages':
-        return _pdfSectionBlock(
-          "Languages",
-          pw.Column(
-            crossAxisAlignment: pw.CrossAxisAlignment.start,
-            children: (data as List)
-                .map<pw.Widget>((lang) => pw.Padding(
-                      padding: const pw.EdgeInsets.only(bottom: 4),
-                      child: pw.Row(
-                        crossAxisAlignment: pw.CrossAxisAlignment.start,
-                        children: [
-                          pw.Container(
-                            width: 6,
-                            height: 6,
-                            margin: const pw.EdgeInsets.only(top: 3, right: 6),
-                            color: PdfColors.black,
-                          ),
-                          pw.Expanded(
-                            child: pw.Text(
-                              lang,
-                              style: const pw.TextStyle(fontSize: 10),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ))
-                .toList(),
+        final widgets = <pw.Widget>[];
+
+        // Add section heading
+        widgets.add(
+          pw.Text(
+            "LANGUAGES",
+            style: pw.TextStyle(
+              fontSize: 14,
+              fontWeight: pw.FontWeight.bold,
+              color: PdfColors.black,
+            ),
           ),
+        );
+        widgets.add(pw.SizedBox(height: 6));
+
+        // Add each language separately
+        for (final lang in data as List) {
+          widgets.add(
+            pw.Padding(
+              padding: const pw.EdgeInsets.only(bottom: 4),
+              child: pw.Row(
+                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                children: [
+                  pw.Container(
+                    width: 6,
+                    height: 6,
+                    margin: const pw.EdgeInsets.only(top: 3, right: 6),
+                    color: PdfColors.black,
+                  ),
+                  pw.Expanded(
+                    child: pw.Text(
+                      lang,
+                      style: const pw.TextStyle(fontSize: 10),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
+        return pw.Column(
+          crossAxisAlignment: pw.CrossAxisAlignment.start,
+          children: widgets,
         );
 
       default:
@@ -480,7 +515,7 @@ class TemplateDefault {
       final companyLoc = "${exp['company'] ?? ''}"
           "${(exp['location'] ?? '').toString().trim().isNotEmpty ? ", ${exp['location']}" : ""}";
       final dates =
-          (exp['dates'] ?? '').toString().replaceAll(RegExp(r'[–—]'), '-');
+      (exp['dates'] ?? '').toString().replaceAll(RegExp(r'[–—]'), '-');
 
       return pw.Column(
         crossAxisAlignment: pw.CrossAxisAlignment.start,
@@ -511,7 +546,9 @@ class TemplateDefault {
                   child: pw.Text(
                     companyLoc,
                     style: pw.TextStyle(
-                        fontSize: 11, fontStyle: pw.FontStyle.italic),
+                      fontSize: 11,
+                      fontStyle: pw.FontStyle.italic,
+                    ),
                   ),
                 ),
                 if (dates.isNotEmpty)
@@ -534,7 +571,7 @@ class TemplateDefault {
             ),
           pw.SizedBox(height: 4),
           ...((exp['details'] as List?) ?? const []).map(
-            (d) => pw.Padding(
+                (d) => pw.Padding(
               padding: const pw.EdgeInsets.only(bottom: 2),
               child: pw.Row(
                 crossAxisAlignment: pw.CrossAxisAlignment.start,
@@ -563,53 +600,27 @@ class TemplateDefault {
       );
     }
 
-    final children = <pw.Widget>[];
-    if (items.isNotEmpty) {
-      children.add(
-        pw.Table(
-          columnWidths: const {0: pw.FlexColumnWidth(1)},
-          children: [
-            pw.TableRow(
-              children: [
-                pw.Padding(
-                  padding: const pw.EdgeInsets.only(bottom: 12),
-                  child: pw.Column(
-                    crossAxisAlignment: pw.CrossAxisAlignment.start,
-                    children: [
-                      pw.Text(
-                        "Work Experience".toUpperCase(),
-                        style: pw.TextStyle(
-                          fontSize: 14,
-                          fontWeight: pw.FontWeight.bold,
-                          color: PdfColors.black,
-                        ),
-                      ),
-                      pw.SizedBox(height: 6),
-                      buildEntry(items.first),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ],
+    // 👉 Heading + Entries (each entry independent)
+    final widgets = <pw.Widget>[
+      pw.Text(
+        "WORK EXPERIENCE",
+        style: pw.TextStyle(
+          fontSize: 14,
+          fontWeight: pw.FontWeight.bold,
+          color: PdfColors.black,
         ),
-      );
-    }
-
-    if (items.length > 1) {
-      children.addAll(
-        items.skip(1).map(
-              (exp) => pw.Padding(
-                padding: const pw.EdgeInsets.only(bottom: 12),
-                child: buildEntry(exp),
-              ),
-            ),
-      );
-    }
+      ),
+      pw.SizedBox(height: 6),
+      for (final exp in items)
+        pw.Padding(
+          padding: const pw.EdgeInsets.only(bottom: 12),
+          child: buildEntry(exp),
+        ),
+    ];
 
     return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.start,
-      children: children,
+      children: widgets,
     );
   }
 }

@@ -6,7 +6,6 @@ import 'package:flutter/material.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../../services/firestore_service.dart';
-import 'package:permission_handler/permission_handler.dart';
 
 class VoiceInputController extends ChangeNotifier {
   final FirestoreService _firestoreService = FirestoreService();
@@ -55,63 +54,70 @@ class VoiceInputController extends ChangeNotifier {
         'key': 'name',
         'required': true,
         'multiple': false,
-        'hint': "What's your full name? Example: My name is Ali Ahmed."
+        'hint': "Give your full name clearly. Example: My name is Sam Alex."
       },
       {
         'title': 'Contact Info',
         'key': 'contact',
         'required': true,
         'multiple': true,
-        'hint': "Share your phone, email or address. Example: My phone number is 03001234560."
+        'hint':
+        "Provide email, phone, address, LinkedIn, GitHub, or website. Example: Phone number is 03001234560 | Email is alex@gmail.com | Address is Los Angeles, USA."
       },
       {
         'title': 'Education',
         'key': 'education',
         'required': true,
         'multiple': true,
-        'hint': "Mention your education. Example: I completed my Bachelor's from Punjab University in 2022."
+        'hint':
+        "Include degree, institute, year, and marks/GPA. Example: I have done Bachelor in Commerce from Oxford University, at London in 2023 with GPA 3.4"
       },
       {
         'title': 'Skills',
         'key': 'skills',
         'required': true,
         'multiple': true,
-        'hint': "List your skills. Example: I am good at communication, teamwork, and using MS Office."
+        'hint':
+        "List your skills. Example: I am good at handling cash, customer service, and using a billing machine."
       },
       {
         'title': 'Languages',
         'key': 'languages',
         'required': true,
         'multiple': true,
-        'hint': "Which languages do you speak? Example: I can speak English, Urdu, and Punjabi."
+        'hint':
+        "Give languages you speak Example: I can speak English, Urdu, and Japanese."
       },
       {
         'title': 'Certifications',
         'key': 'certifications',
         'required': false,
         'multiple': true,
-        'hint': "Say a certificate you earned. Example: I completed a course in Office Management from ABC Institute."
+        'hint':
+        "Include certificate name, institute, location, and year. Example: I completed a Certificate in Retail Management from Skills Development Institute, California in 2021."
       },
       {
         'title': 'Work Experience',
         'key': 'experience',
         'required': false,
         'multiple': true,
-        'hint': "Talk about your job experience. Example: I worked as a salesman at Metro Store for 2 years."
+        'hint':
+        "Include job title, company, location, year, and duration. Example: Worked as Cashier at Walmart, New York from 2019 to 2021 for 2 years."
       },
       {
         'title': 'Projects',
         'key': 'projects',
         'required': false,
         'multiple': true,
-        'hint': "Mention a project you’ve done. Example: I helped set up a billing system at my last job."
+        'hint':
+        "Project title and short description. Example: Customer Queue System , Helped organize customer lines at a local business."
       },
       {
         'title': 'Professional Summary',
         'key': 'summary',
         'required': false,
         'multiple': false,
-        'hint': "Briefly describe yourself. Example: I am a hardworking individual with strong communication skills and a passion for learning."
+        "hint": "(Optional AI will generate summary itself) - Briefly describe yourself. Example: I am a friendly cashier with 2 years of experience handling customer payments and providing excellent service."
       },
     ];
 
@@ -178,36 +184,13 @@ class VoiceInputController extends ChangeNotifier {
     notifyListeners();
   }
 
-
-// Inside VoiceInputController class:
-  Future<bool> _requestMicPermission() async {
-    var status = await Permission.microphone.status;
-    if (!status.isGranted) {
-      status = await Permission.microphone.request();
-    }
-    return status.isGranted;
-  }
-
-
-
   /// Starts listening to speech and updates transcription in real time
   Future<void> startListening(BuildContext context) async {
-    if (_isManualInput) return;
-
-    // 1️⃣ Request mic permission
-    if (!await _requestMicPermission()) {
-      micFailed = true;
-      notifyListeners();
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Microphone permission denied."),
-          duration: Duration(seconds: 3),
-        ),
-      );
+    if (_isManualInput) {
+      // If manual input mode is on, do not start listening
       return;
     }
 
-    // 2️⃣ Check internet
     if (!await hasInternet()) {
       micFailed = true;
       notifyListeners();
@@ -219,7 +202,6 @@ class VoiceInputController extends ChangeNotifier {
       return;
     }
 
-    // 3️⃣ Initialize speech
     await initializeSpeech();
     await Future.delayed(const Duration(milliseconds: 100));
 
@@ -230,7 +212,10 @@ class VoiceInputController extends ChangeNotifier {
     }
 
     isListening = true;
-    transcription = '';
+    // ✅ keep old text if editing an entry
+    if (editingMicEntryIndex == null) {
+      transcription = '';
+    }
     notifyListeners();
 
     await _speech.listen(
@@ -244,7 +229,6 @@ class VoiceInputController extends ChangeNotifier {
       listenMode: stt.ListenMode.dictation,
     );
   }
-
 
   /// Stops speech listening
   Future<void> stopListening() async {
@@ -297,7 +281,9 @@ class VoiceInputController extends ChangeNotifier {
       }
 
       final lastCV = await _firestoreService.getLastCV(userId);
-      if (lastCV != null && lastCV['cvData'] != null && (lastCV['cvData'] as Map).isNotEmpty) {
+      if (lastCV != null &&
+          lastCV['cvData'] != null &&
+          (lastCV['cvData'] as Map).isNotEmpty) {
         isResumed = true;
         cvId = lastCV['cvId'];
         final savedData = Map<String, dynamic>.from(lastCV['cvData']);
@@ -350,9 +336,9 @@ class VoiceInputController extends ChangeNotifier {
   /// Edits an entry: sets transcription to existing entry, removes from list, starts listening again
   void editEntry(BuildContext context, String key, int index) {
     transcription = (userData[key] as List<String>)[index];
+    editingMicEntryIndex = index; // ✅ Add this line
     (userData[key] as List<String>).removeAt(index);
     notifyListeners();
-    startListening(context);
   }
 
   /// Deletes an entry from a multiple list
@@ -361,13 +347,90 @@ class VoiceInputController extends ChangeNotifier {
     notifyListeners();
   }
 
+  int? editingMicEntryIndex;
+
+  void startMicEdit(int index) {
+    editingMicEntryIndex = index;
+    transcription = getEntriesForSection(sections[currentIndex]['key'])[index];
+    notifyListeners();
+  }
+
+  void saveMicEdit() {
+    if (editingMicEntryIndex != null) {
+      final section = sections[currentIndex];
+      final key = section['key'];
+      if (section['multiple']) {
+        (userData[key] as List<String>)[editingMicEntryIndex!] = transcription;
+      } else {
+        userData[key] = transcription;
+      }
+      editingMicEntryIndex = null;
+      transcription = '';
+      notifyListeners();
+    }
+  }
+
+  /// Adds a manual entry to the current section (fix for Issue 2)
+  void addEntryToCurrentSection(String entry, {int? editIndex}) {
+    final section = sections[currentIndex];
+    final key = section['key'];
+
+    if (section['multiple']) {
+      if (editIndex != null) {
+        (userData[key] as List<String>)[editIndex] = entry; // replace
+      } else {
+        (userData[key] as List<String>).add(entry); // add new
+      }
+    } else {
+      userData[key] = entry;
+    }
+
+    transcription = '';
+    notifyListeners();
+  }
+
+  /// Update an existing entry in the current section
+  void updateEntryInCurrentSection(int index, String newValue) {
+    final section = sections[currentIndex];
+    final key = section['key'];
+
+    if (section['multiple']) {
+      (userData[key] as List<String>)[index] = newValue;
+    } else {
+      userData[key] = newValue;
+    }
+
+    notifyListeners();
+  }
+
+  /// Get entries for a section key (for multiple-entry sections)
+  List<String> getEntriesForSection(String key) {
+    final sectionData = userData[key];
+    if (sectionData is List<String>) {
+      return sectionData;
+    }
+    return [];
+  }
+
+  /// Delete an entry from a section (by index)
+  void deleteEntryFromSection(String key, int index) {
+    final sectionData = userData[key];
+    if (sectionData is List<String>) {
+      if (index >= 0 && index < sectionData.length) {
+        sectionData.removeAt(index);
+        notifyListeners();
+      }
+    }
+  }
+
   /// Proceeds to next section or completes the CV
   Future<String?> nextSection(BuildContext context) async {
     final isConnected = await hasInternet();
     if (!isConnected) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text("No internet connection. Please reconnect to continue."),
+          content:
+          Text("No internet connection. Please reconnect to continue."),
           duration: Duration(seconds: 3),
         ),
       );
@@ -414,7 +477,10 @@ class VoiceInputController extends ChangeNotifier {
               Expanded(
                 child: Text(
                   "This field is required.",
-                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16, color: Colors.white),
+                  style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 16,
+                      color: Colors.white),
                 ),
               ),
             ],

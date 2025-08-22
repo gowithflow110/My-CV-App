@@ -117,7 +117,7 @@ class HomeScreen extends StatelessWidget {
               icon: Icons.library_books,
               title: "My CV Library",
               description:
-                  "View, edit or download all your previously created CVs.",
+              "View, edit or download all your previously created CVs.",
               routeName: AppRoutes.library,
               arguments: {
                 'userId': FirebaseAuth.instance.currentUser?.uid ?? '',
@@ -131,13 +131,13 @@ class HomeScreen extends StatelessWidget {
 
   /// ✅ Tappable Card with Bounce + Snackbar on Navigation Failure
   Widget _buildActionCard(
-    BuildContext context, {
-    required IconData icon,
-    required String title,
-    required String description,
-    required String routeName,
-    Map<String, dynamic>? arguments,
-  }) {
+      BuildContext context, {
+        required IconData icon,
+        required String title,
+        required String description,
+        required String routeName,
+        Map<String, dynamic>? arguments,
+      }) {
     return TweenAnimationBuilder<double>(
       tween: Tween(begin: 1, end: 1),
       duration: const Duration(milliseconds: 200),
@@ -230,7 +230,7 @@ class HomeScreen extends StatelessWidget {
       if (context.mounted) {
         Navigator.of(context).pushNamedAndRemoveUntil(
           AppRoutes.login, // ✅ Use your defined login route
-          (route) => false,
+              (route) => false,
         );
       }
     } catch (e) {
