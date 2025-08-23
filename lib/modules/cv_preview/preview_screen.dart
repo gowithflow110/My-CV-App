@@ -369,33 +369,29 @@ debugPrint("❌ Failed to sync [$section]: $e");
 
     try {
       final firestore = FirebaseFirestore.instance;
-
-      // Use the correct document reference for generated CVs
-      final docRef = firestore
-          .collection('users')
-          .doc(cv.userId)
-          .collection('aiGeneratedCVs')
-          .doc(cv.cvId);
+      final firestoreService = FirestoreService();
 
       // Handle header fields specially since they're at root level
       if (section == 'header' && value is Map<String, dynamic>) {
-        await docRef.set({
-          'cvData.name': value['name'] ?? '',
-          'cvData.summary': value['summary'] ?? '',
-          'updatedAt': FieldValue.serverTimestamp(),
-        }, SetOptions(merge: true));
+        // Create the updates map
+        final updates = {
+          'name': value['name'] ?? '',
+          'summary': value['summary'] ?? '',
+        };
+
+        // Update both locations
+        await firestoreService.updateBothCVLocations(cv.userId, cv.cvId, updates);
       } else {
         // For all other sections
-        await docRef.set({
-          'cvData.$section': value,
-          'updatedAt': FieldValue.serverTimestamp(),
-        }, SetOptions(merge: true));
+        final updates = {section: value};
+
+        // Update both locations
+        await firestoreService.updateBothCVLocations(cv.userId, cv.cvId, updates);
       }
 
       debugPrint("✅ Updated Firestore section [$section] for cvId=${cv.cvId}");
     } catch (e) {
       debugPrint("❌ Failed to persist [$section] patch: $e");
-      // Re-throw to handle in calling method
       throw e;
     }
   }
