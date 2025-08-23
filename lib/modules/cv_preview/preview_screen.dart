@@ -268,34 +268,52 @@ child: Center(child: CircularProgressIndicator()),
 
 // ======= Save & persistence helpers =======
 
-Future<void> _savePatch({required String section, required dynamic value}) async {
-setState(() => _saving = true);
-try {
-// 1) Update overrides so UI reflects immediately
-setState(() {
-_overrides[section] = value;
-});
+  Future<void> _savePatch({required String section, required dynamic value}) async {
+    setState(() => _saving = true);
+    try {
+      // 1) Update overrides so UI reflects immediately
+      setState(() {
+        _overrides[section] = value;
+      });
 
-// 2) Mutate your CVModel so TemplateService(pdf) uses updated data
-await _applyPatchToCv(section: section, value: value);
+      // 2) Update local CV data - handle header specially
+      if (section == 'header' && value is Map<String, dynamic>) {
+        // Header fields are stored at root level, not under 'header'
+        cv.cvData['name'] = value['name'] ?? '';
+        cv.cvData['summary'] = value['summary'] ?? '';
+      } else {
+        // For other sections, replace the entire section
+        cv.cvData[section] = value;
+      }
 
-// 3) Persist to Firestore generated doc (post-AI)
-await _persistPatchToFirestore(section: section, value: value);
+      // 3) Force UI refresh
+      if (mounted) setState(() {});
 
-if (mounted) {
-ScaffoldMessenger.of(context).showSnackBar(
-const SnackBar(content: Text('Saved changes')),
-);
-}
-} finally {
-if (mounted) setState(() => _saving = false);
-}
-}
+      // 4) Persist to Firestore
+      await _persistPatchToFirestore(section: section, value: value);
 
-Map<String, dynamic> _asMap(dynamic v) {
-if (v is Map<String, dynamic>) return v;
-return <String, dynamic>{};
-}
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Saved changes')),
+        );
+      }
+    } catch (e) {
+      debugPrint("❌ Error in _savePatch: $e");
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to save: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  Map<String, dynamic> _asMap(dynamic data) {
+    if (data is Map<String, dynamic>) return data;
+    if (data is Map) return Map<String, dynamic>.from(data);
+    return {};
+  }
 
 Future<void> _applyPatchToCv({
 required String section,
@@ -340,34 +358,47 @@ debugPrint("❌ Failed to sync [$section]: $e");
 }
 }
 
-Future<void> _persistPatchToFirestore({
-required String section,
-required dynamic value,
-}) async {
-if (cv.userId.isEmpty || cv.cvId.isEmpty) {
-debugPrint("⚠ Skipping Firestore patch — missing userId or cvId");
-return;
-}
+  Future<void> _persistPatchToFirestore({
+    required String section,
+    required dynamic value,
+  }) async {
+    if (cv.userId.isEmpty || cv.cvId.isEmpty) {
+      debugPrint("⚠ Skipping Firestore patch — missing userId or cvId");
+      return;
+    }
 
-try {
-final firestore = FirebaseFirestore.instance;
+    try {
+      final firestore = FirebaseFirestore.instance;
 
-final docRef = firestore
-    .collection('users')
-    .doc(cv.userId)
-    .collection('aiGeneratedCVs')
-    .doc(cv.cvId);
+      // Use the correct document reference for generated CVs
+      final docRef = firestore
+          .collection('users')
+          .doc(cv.userId)
+          .collection('aiGeneratedCVs')
+          .doc(cv.cvId);
 
-await docRef.update({
-'cvData.$section': cv.cvData[section],
-'updatedAt': FieldValue.serverTimestamp(),
-});
+      // Handle header fields specially since they're at root level
+      if (section == 'header' && value is Map<String, dynamic>) {
+        await docRef.set({
+          'cvData.name': value['name'] ?? '',
+          'cvData.summary': value['summary'] ?? '',
+          'updatedAt': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
+      } else {
+        // For all other sections
+        await docRef.set({
+          'cvData.$section': value,
+          'updatedAt': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
+      }
 
-debugPrint("✅ Firestore patched [$section] for cvId=${cv.cvId}");
-} catch (e) {
-debugPrint("❌ Failed to persist [$section] patch: $e");
-}
-}
+      debugPrint("✅ Updated Firestore section [$section] for cvId=${cv.cvId}");
+    } catch (e) {
+      debugPrint("❌ Failed to persist [$section] patch: $e");
+      // Re-throw to handle in calling method
+      throw e;
+    }
+  }
 
 // ======= Dialogs & menu actions =======
 
@@ -599,24 +630,24 @@ const SizedBox(height: 12),
 Row(
 children: [
 ElevatedButton.icon(
-onPressed: () async {
-final name = _nameCtrl.text.trim();
-final summary = _summaryCtrl.text.trim();
+  onPressed: () async {
+    final name = _nameCtrl.text.trim();
+    final summary = _summaryCtrl.text.trim();
 
-if (name.isEmpty && summary.isEmpty) {
-ScaffoldMessenger.of(context).showSnackBar(
-const SnackBar(content: Text("⚠️ Please fill at least one field before saving")),
-);
-return;
-}
+    if (name.isEmpty && summary.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("⚠️ Please fill at least one field before saving")),
+      );
+      return;
+    }
 
-await _savePatch(
-section: 'header',
-value: {'name': name, 'summary': summary},
-);
+    await _savePatch(
+      section: 'header',
+      value: {'name': name, 'summary': summary},
+    );
 
-if (mounted) setState(() => _editingHeader = false);
-},
+    if (mounted) setState(() => _editingHeader = false);
+  },
 icon: const Icon(Icons.check),
 label: const Text('Save'),
 ),

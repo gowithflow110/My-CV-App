@@ -54,7 +54,7 @@ class TemplateDefault {
       {
         'type': 'header',
         'data': {
-          'name': data['fullName'] ?? '',
+          'name': data['name'] ?? '',        // Changed from 'fullName'
           'summary': data['summary'] ?? '',
         }
       },

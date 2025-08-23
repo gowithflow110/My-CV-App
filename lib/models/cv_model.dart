@@ -9,7 +9,7 @@ class CVModel {
   final bool isCompleted;           // Whether CV was marked complete
   final String? aiEnhancedText;     // Optional: AI-enhanced version
   final DateTime createdAt;         // Timestamp when CV was first created
-  final DateTime updatedAt;         // Timestamp when CV was last updated
+  final DateTime updatedAt;         // Timestamp when CV was last updatedA
 
   CVModel({
     required this.cvId,
