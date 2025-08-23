@@ -473,55 +473,55 @@ SnackBar(content: Text("❌ Failed to save CV: $e")),
 
 // ======= Render sections (with edit capability) =======
 
-Widget _buildSection(String type, dynamic data, BuildContext context) {
-switch (type) {
-case 'header':
-return _buildHeader(data);
-case 'contact':
-return _buildContact(data);
-case 'skills':
-return _buildSkills(List<String>.from(data ?? const []), context);
-case 'experience':
-if (_editingExperience) {
-return _buildExperienceEditor(_experienceWorking);
-} else {
-return _buildComplexWithEditor('WORK EXPERIENCE', 'experience', data,
-onEdit: () => _initExperienceEditing(data));
-}
-case 'projects':
-if (_editingProjects) {
-return _buildProjectsEditor(_projectsWorking);
-} else {
-return _buildComplexWithEditor('PROJECTS', 'projects', data,
-onEdit: () => _initProjectsEditing(data));
-}
-case 'education':
-if (_editingEducation) {
-return _buildEducationEditor(_educationWorking);
-} else {
-return _buildComplexWithEditor('EDUCATION', 'education', data,
-onEdit: () => _initEducationEditing(data));
-}
-case 'certifications':
-if (_editingCertifications) {
-return _buildCertificationsEditor(_certificationsWorking);
-} else {
-return _buildComplexWithEditor('CERTIFICATIONS', 'certifications', data,
-onEdit: () => _initCertificationsEditing(data));
-}
-case 'languages':
-return _buildLanguages(List<String>.from(data ?? const []));
-default:
-return const SizedBox.shrink();
-}
-}
+  Widget _buildSection(String type, dynamic data, BuildContext context) {
+    switch (type) {
+      case 'header':
+        return _buildHeader(Map<String, dynamic>.from(data ?? {}));
+      case 'contact':
+        return _buildContact(Map<String, dynamic>.from(data ?? {}));
+      case 'skills':
+        return _buildSkills(List<String>.from(data ?? const []), context);
+      case 'experience':
+        if (_editingExperience) {
+          return _buildExperienceEditor(_experienceWorking);
+        } else {
+          return _buildComplexWithEditor('WORK EXPERIENCE', 'experience', data,
+              onEdit: () => _initExperienceEditing(data));
+        }
+      case 'projects':
+        if (_editingProjects) {
+          return _buildProjectsEditor(_projectsWorking);
+        } else {
+          return _buildComplexWithEditor('PROJECTS', 'projects', data,
+              onEdit: () => _initProjectsEditing(data));
+        }
+      case 'education':
+        if (_editingEducation) {
+          return _buildEducationEditor(_educationWorking);
+        } else {
+          return _buildComplexWithEditor('EDUCATION', 'education', data,
+              onEdit: () => _initEducationEditing(data));
+        }
+      case 'certifications':
+        if (_editingCertifications) {
+          return _buildCertificationsEditor(_certificationsWorking);
+        } else {
+          return _buildComplexWithEditor('CERTIFICATIONS', 'certifications', data,
+              onEdit: () => _initCertificationsEditing(data));
+        }
+      case 'languages':
+        return _buildLanguages(List<String>.from(data ?? const []));
+      default:
+        return const SizedBox.shrink();
+    }
+  }
 
 dynamic _mergeWithOverride(String section, dynamic original) {
 final override = _overrides[section];
 if (override == null) return original;
 
 if (original is Map && override is Map) {
-return {...original, ...override};
+  return {...Map<String, dynamic>.from(original), ...Map<String, dynamic>.from(override)};
 }
 // Lists or scalars just replace
 return override;
@@ -529,8 +529,9 @@ return override;
 
 // ----- Header -----
 Widget _buildHeader(Map<String, dynamic> data) {
-final name = (data['name'] ?? '').toString();
-final summary = (data['summary'] ?? '').toString();
+  final Map<String, dynamic> headerData = Map<String, dynamic>.from(data);
+  final name = (headerData['name'] ?? '').toString();
+  final summary = (headerData['summary'] ?? '').toString();
 
 if (!_editingHeader) {
 return Padding(
@@ -635,6 +636,7 @@ label: const Text('Cancel'),
 
 // ----- Contact -----
 Widget _buildContact(Map<String, dynamic> data) {
+  final Map<String, dynamic> contactData = Map<String, dynamic>.from(data);
 if (!_editingContact) {
 final items = <Widget>[];
 void addItem(IconData icon, String? value) {
