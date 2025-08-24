@@ -571,6 +571,27 @@ if (original is Map && override is Map) {
 return override;
 }
 
+// KEEP ONLY THIS VERSION
+  bool _getEnhancingState(String fieldType) {
+    switch (fieldType) {
+      case 'email': return _enhancingContact;
+      case 'location': return _enhancingContact;
+      case 'phone': return _enhancingContact;
+      case 'github': return _enhancingContact;
+      case 'linkedin': return _enhancingContact;
+      case 'website': return _enhancingContact;
+      case 'header': return _enhancingHeader;
+      case 'contact': return _enhancingContact;
+      case 'skills': return _enhancingSkills;
+      case 'experience': return _enhancingExperience;
+      case 'projects': return _enhancingProjects;
+      case 'education': return _enhancingEducation;
+      case 'certifications': return _enhancingCertifications;
+      case 'languages': return _enhancingLanguages;
+      default: return false;
+    }
+  }
+
 // ----- Header -----
   Widget _buildHeader(Map<String, dynamic> data) {
     final Map<String, dynamic> headerData = Map<String, dynamic>.from(data);
@@ -969,19 +990,6 @@ ${contactData.entries.map((e) => "${e.key}: ${e.value}").join("\n")}
     }
   }
 
-// Helper method to get enhancing state for specific fields
-  bool _getEnhancingState(String fieldType) {
-    switch (fieldType) {
-      case 'email': return _enhancingContact; // You might want to create separate states for each field
-      case 'location': return _enhancingContact;
-      case 'phone': return _enhancingContact;
-      case 'github': return _enhancingContact;
-      case 'linkedin': return _enhancingContact;
-      case 'website': return _enhancingContact;
-      default: return false;
-    }
-  }
-
 // ----- Skills -----
   Widget _buildSkills(List<String> skills, BuildContext context) {
     if (!_editingSkills) {
@@ -1141,22 +1149,25 @@ ${contactData.entries.map((e) => "${e.key}: ${e.value}").join("\n")}
 
 // Add this method to handle skills enhancement
   void _enhanceSkills(List<String> currentSkills) async {
+    if (!mounted) return;
+
     setState(() => _enhancingSkills = true);
 
     try {
       final aiService = AIService();
       final enhancedSkills = await aiService.polishCV({'skills': currentSkills});
 
-      // Parse the enhanced skills (this is a simple implementation)
-      // You might need to adjust this based on how your AI service returns data
+      // Parse the enhanced skills
       final newSkills = enhancedSkills.split(',')
           .map((skill) => skill.trim())
           .where((skill) => skill.isNotEmpty)
           .toList();
 
-      setState(() {
-        _skillsWorking = newSkills;
-      });
+      if (mounted) {
+        setState(() {
+          _skillsWorking = newSkills;
+        });
+      }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -1170,7 +1181,9 @@ ${contactData.entries.map((e) => "${e.key}: ${e.value}").join("\n")}
         );
       }
     } finally {
-      setState(() => _enhancingSkills = false);
+      if (mounted) {
+        setState(() => _enhancingSkills = false);
+      }
     }
   }
 
@@ -2217,15 +2230,8 @@ controller: _certDateCtrls[index],
   Future<void> _enhanceField(String fieldType, dynamic currentData) async {
     _aiPromptCtrl.clear();
 
-    // Convert data to string for the prompt
-    String contentString;
-    if (currentData is Map) {
-      contentString = jsonEncode(currentData);
-    } else if (currentData is List) {
-      contentString = currentData.join(', ');
-    } else {
-      contentString = currentData.toString();
-    }
+    // Check if widget is still mounted before showing dialog
+    if (!mounted) return;
 
     // Show a dialog for custom AI prompt
     final enhancedContent = await showDialog<String>(
@@ -2247,14 +2253,20 @@ controller: _certDateCtrls[index],
           ElevatedButton(
             onPressed: () async {
               // Call AI service
-              final enhanced = await _callAIService(fieldType, contentString, _aiPromptCtrl.text);
-              Navigator.pop(context, enhanced);
+              final enhanced = await _callAIService(fieldType, currentData.toString(), _aiPromptCtrl.text);
+              // Check if the dialog is still in the tree before popping
+              if (Navigator.of(context).canPop()) {
+                Navigator.pop(context, enhanced);
+              }
             },
             child: const Text("Enhance"),
           ),
         ],
       ),
     );
+
+    // Check if widget is still mounted before updating state
+    if (!mounted) return;
 
     if (enhancedContent != null && enhancedContent.isNotEmpty) {
       // Update the appropriate field based on fieldType
@@ -2265,7 +2277,9 @@ controller: _certDateCtrls[index],
 // Simulate AI service call
   Future<String> _callAIService(String fieldType, String content, String prompt) async {
     // Set enhancing state to true
-    _setEnhancingState(fieldType, true);
+    if (mounted) {
+      _setEnhancingState(fieldType, true);
+    }
 
     try {
       // Initialize your AI service
@@ -2274,33 +2288,49 @@ controller: _certDateCtrls[index],
       // Call the appropriate AI service method based on field type
       switch (fieldType) {
         case 'header':
-        // For header, we might want to enhance the summary
+        // For header, enhance the summary
           return await aiService.polishSummary(content);
+
         case 'skills':
-        // For skills, we can use the general polishCV method
-          return await aiService.polishCV({'skills': content.split(',')});
+        // For skills, use the general polishCV method
+          final result = await aiService.polishCV({'skills': content.split(',')});
+          return _extractTextFromAIResponse(result);
+
         case 'experience':
-        // For experience, we can use generateExperienceBullets
-        // Note: This requires parsing the experience data properly
-          final expData = _parseExperienceData(content);
-          final bullets = await aiService.generateExperienceBullets(expData);
-          return bullets.join('\n• ');
+        // For experience, use generateExperienceBullets
+          try {
+            final expData = _parseExperienceData(content);
+            final bullets = await aiService.generateExperienceBullets(expData);
+            return bullets.join('\n• ');
+          } catch (e) {
+            // Fallback to general polishCV if experience parsing fails
+            final result = await aiService.polishCV({'experience': content});
+            return _extractTextFromAIResponse(result);
+          }
+
         case 'projects':
         // For projects, use the general polishCV method
-          return await aiService.polishCV({'projects': content});
+          final result = await aiService.polishCV({'projects': content});
+          return _extractTextFromAIResponse(result);
+
         case 'education':
         // For education, use the general polishCV method
-          return await aiService.polishCV({'education': content});
+          final result = await aiService.polishCV({'education': content});
+          return _extractTextFromAIResponse(result);
+
         case 'certifications':
         // For certifications, use the general polishCV method
-          return await aiService.polishCV({'certifications': content});
+          final result = await aiService.polishCV({'certifications': content});
+          return _extractTextFromAIResponse(result);
+
         case 'languages':
         // For languages, use the general polishCV method
-          return await aiService.polishCV({'languages': content.split(',')});
-        default:
+          final result = await aiService.polishCV({'languages': content.split(',')});
+          return _extractTextFromAIResponse(result);
 
-        // In the _callAIService method, after getting the response:
-          String result = await aiService.polishSummary(content);
+        default:
+        // For other fields, use polishSummary
+          final result = await aiService.polishSummary(content);
           return _extractTextFromAIResponse(result);
       }
     } catch (e) {
@@ -2312,11 +2342,12 @@ controller: _certDateCtrls[index],
       }
       return content; // Return original content on error
     } finally {
-      // Reset enhancing state
-      _setEnhancingState(fieldType, false);
+      // Reset enhancing state only if widget is still mounted
+      if (mounted) {
+        _setEnhancingState(fieldType, false);
+      }
     }
   }
-
 // Helper method to parse experience data for AI service
   Map<String, dynamic> _parseExperienceData(String content) {
     // This is a simplified parser - you might need to adjust based on your data structure
@@ -2367,36 +2398,41 @@ controller: _certDateCtrls[index],
 
 // Update field with AI-enhanced content
   void _updateFieldWithAI(String fieldType, String enhancedContent) {
+    // Check if widget is still mounted before updating state
+    if (!mounted) return;
+
     switch (fieldType) {
       case 'header':
-      // For header, update the summary
+      // For header, update both name and summary
         setState(() {
-          _summaryCtrl.text = enhancedContent;
-          // If you want to save automatically, call _savePatch
-          // _savePatch(section: 'header', value: {'summary': enhancedContent});
+          _nameCtrl.text = enhancedContent;
         });
         break;
       case 'skills':
       // For skills, update the skills list
         setState(() {
-          _skillsWorking = enhancedContent.split(',');
-          // If you want to save automatically, call _savePatch
-          // _savePatch(section: 'skills', value: _skillsWorking);
+          _skillsWorking = enhancedContent.split(',')
+              .map((skill) => skill.trim())
+              .where((skill) => skill.isNotEmpty)
+              .toList();
         });
         break;
-      case 'experience':
-      // For experience, you might need to parse the enhanced content
-      // and update the specific experience item
-      // This is more complex and would require knowing which experience item is being edited
+      case 'languages':
+      // For languages, update the languages list
+        setState(() {
+          _langsWorking = enhancedContent.split(',')
+              .map((lang) => lang.trim())
+              .where((lang) => lang.isNotEmpty)
+              .toList();
+        });
         break;
     // Add cases for other field types
-      default:
-      // For other fields, show a message or handle appropriately
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('AI enhancement completed. Please review and save.')),
-          );
-        }
+    }
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('AI enhancement completed!')),
+      );
     }
   }
 
