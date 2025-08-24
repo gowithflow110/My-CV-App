@@ -34,39 +34,25 @@ import 'package:path/path.dart' as path;
 import '../../services/firestore_service.dart';
 import '../../routes/app_routes.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:cvapp/services/ai_service.dart';
 
 class PreviewScreen extends StatefulWidget {
-final CVModel cv;
-const PreviewScreen({Key? key, required this.cv}) : super(key: key);
+  final CVModel cv;
+  const PreviewScreen({Key? key, required this.cv}) : super(key: key);
 
-@override
-State<PreviewScreen> createState() => _PreviewScreenState();
+  @override
+  State<PreviewScreen> createState() => _PreviewScreenState();
 }
 
 class _PreviewScreenState extends State<PreviewScreen> {
 // ======= Inline editing state =======
-bool _editingHeader = false;
-bool _editingContact = false;
-bool _editingSkills = false;
-bool _editingLanguages = false;
-bool _editingExperience = false;
-bool _editingProjects = false;
-bool _editingEducation = false;
-bool _editingCertifications = false;
-
-// ======= AI Enhancing state =======
-bool _enhancingHeader = false;
-bool _enhancingContact = false;
-bool _enhancingSkills = false;
-bool _enhancingExperience = false;
-bool _enhancingProjects = false;
-bool _enhancingEducation = false;
-bool _enhancingCertifications = false;
-bool _enhancingLanguages = false;
-
-// Add AI prompt controller
-final _aiPromptCtrl = TextEditingController();
+  bool _editingHeader = false;
+  bool _editingContact = false;
+  bool _editingSkills = false;
+  bool _editingLanguages = false;
+  bool _editingExperience = false;
+  bool _editingProjects = false;
+  bool _editingEducation = false;
+  bool _editingCertifications = false;
 
 // ----- Shared section block -----
   Widget _sectionBlock(String title, Widget child) {
@@ -86,202 +72,199 @@ final _aiPromptCtrl = TextEditingController();
 
 
 // Working overrides that the preview renders from (merged on top of template data)
-final Map<String, dynamic> _overrides = {};
+  final Map<String, dynamic> _overrides = {};
 
 // Controllers for header & contact
-final _nameCtrl = TextEditingController();
-final _summaryCtrl = TextEditingController();
+  final _nameCtrl = TextEditingController();
+  final _summaryCtrl = TextEditingController();
 
-final _emailCtrl = TextEditingController();
-final _locationCtrl = TextEditingController();
-final _phoneCtrl = TextEditingController();
-final _githubCtrl = TextEditingController();
-final _linkedinCtrl = TextEditingController();
-final _websiteCtrl = TextEditingController();
+  final _emailCtrl = TextEditingController();
+  final _locationCtrl = TextEditingController();
+  final _phoneCtrl = TextEditingController();
+  final _githubCtrl = TextEditingController();
+  final _linkedinCtrl = TextEditingController();
+  final _websiteCtrl = TextEditingController();
 
 // Skills editing
-final _newSkillCtrl = TextEditingController();
-List<String> _skillsWorking = [];
+  final _newSkillCtrl = TextEditingController();
+  List<String> _skillsWorking = [];
 
 // Languages editing
-final _newLangCtrl = TextEditingController();
-List<String> _langsWorking = [];
+  final _newLangCtrl = TextEditingController();
+  List<String> _langsWorking = [];
 
 // Experience editing
-List<Map<String, dynamic>> _experienceWorking = [];
-final Map<int, TextEditingController> _expTitleCtrls = {};
-final Map<int, TextEditingController> _expCompanyCtrls = {};
-final Map<int, TextEditingController> _expLocationCtrls = {};
-final Map<int, TextEditingController> _expDatesCtrls = {};
-final Map<int, TextEditingController> _expDurationCtrls = {};
-final Map<int, List<TextEditingController>> _expDetailCtrls = {};
+  List<Map<String, dynamic>> _experienceWorking = [];
+  final Map<int, TextEditingController> _expTitleCtrls = {};
+  final Map<int, TextEditingController> _expCompanyCtrls = {};
+  final Map<int, TextEditingController> _expLocationCtrls = {};
+  final Map<int, TextEditingController> _expDatesCtrls = {};
+  final Map<int, TextEditingController> _expDurationCtrls = {};
+  final Map<int, List<TextEditingController>> _expDetailCtrls = {};
 
 // Projects editing
-List<Map<String, dynamic>> _projectsWorking = [];
-final Map<int, TextEditingController> _projectTitleCtrls = {};
-final Map<int, TextEditingController> _projectDescCtrls = {};
+  List<Map<String, dynamic>> _projectsWorking = [];
+  final Map<int, TextEditingController> _projectTitleCtrls = {};
+  final Map<int, TextEditingController> _projectDescCtrls = {};
 
 // Education editing
-List<Map<String, dynamic>> _educationWorking = [];
-final Map<int, TextEditingController> _eduDegreeCtrls = {};
-final Map<int, TextEditingController> _eduInstitutionCtrls = {};
-final Map<int, TextEditingController> _eduLocationCtrls = {};
-final Map<int, TextEditingController> _eduDateCtrls = {};
-final Map<int, TextEditingController> _eduGpaCtrls = {};
+  List<Map<String, dynamic>> _educationWorking = [];
+  final Map<int, TextEditingController> _eduDegreeCtrls = {};
+  final Map<int, TextEditingController> _eduInstitutionCtrls = {};
+  final Map<int, TextEditingController> _eduLocationCtrls = {};
+  final Map<int, TextEditingController> _eduDateCtrls = {};
+  final Map<int, TextEditingController> _eduGpaCtrls = {};
 
 // Certifications editing
-List<Map<String, dynamic>> _certificationsWorking = [];
-final Map<int, TextEditingController> _certTitleCtrls = {};
-final Map<int, TextEditingController> _certIssuerCtrls = {};
-final Map<int, TextEditingController> _certDateCtrls = {};
+  List<Map<String, dynamic>> _certificationsWorking = [];
+  final Map<int, TextEditingController> _certTitleCtrls = {};
+  final Map<int, TextEditingController> _certIssuerCtrls = {};
+  final Map<int, TextEditingController> _certDateCtrls = {};
 
-bool _saving = false;
+  bool _saving = false;
 
-CVModel get cv => widget.cv;
+  CVModel get cv => widget.cv;
 
-@override
-void initState() {
-super.initState();
+  @override
+  void initState() {
+    super.initState();
 // Initialize working data with current CV data
-_skillsWorking = List<String>.from(cv.cvData['skills'] ?? []);
-_langsWorking = List<String>.from(cv.cvData['languages'] ?? []);
-_experienceWorking = List<Map<String, dynamic>>.from(cv.cvData['experience'] ?? []);
-_projectsWorking = List<Map<String, dynamic>>.from(cv.cvData['projects'] ?? []);
-_educationWorking = List<Map<String, dynamic>>.from(cv.cvData['education'] ?? []);
-_certificationsWorking = List<Map<String, dynamic>>.from(cv.cvData['certifications'] ?? []);
-}
+    _skillsWorking = List<String>.from(cv.cvData['skills'] ?? []);
+    _langsWorking = List<String>.from(cv.cvData['languages'] ?? []);
+    _experienceWorking = List<Map<String, dynamic>>.from(cv.cvData['experience'] ?? []);
+    _projectsWorking = List<Map<String, dynamic>>.from(cv.cvData['projects'] ?? []);
+    _educationWorking = List<Map<String, dynamic>>.from(cv.cvData['education'] ?? []);
+    _certificationsWorking = List<Map<String, dynamic>>.from(cv.cvData['certifications'] ?? []);
+  }
 
-@override
-void dispose() {
+  @override
+  void dispose() {
 // Dispose all controllers
-_nameCtrl.dispose();
-_summaryCtrl.dispose();
-_emailCtrl.dispose();
-_locationCtrl.dispose();
-_phoneCtrl.dispose();
-_githubCtrl.dispose();
-_linkedinCtrl.dispose();
-_websiteCtrl.dispose();
-_newSkillCtrl.dispose();
-_newLangCtrl.dispose();
-
-// Add AI prompt controller
-_aiPromptCtrl.dispose();
+    _nameCtrl.dispose();
+    _summaryCtrl.dispose();
+    _emailCtrl.dispose();
+    _locationCtrl.dispose();
+    _phoneCtrl.dispose();
+    _githubCtrl.dispose();
+    _linkedinCtrl.dispose();
+    _websiteCtrl.dispose();
+    _newSkillCtrl.dispose();
+    _newLangCtrl.dispose();
 
 // Dispose experience controllers
-_expTitleCtrls.values.forEach((c) => c.dispose());
-_expCompanyCtrls.values.forEach((c) => c.dispose());
-_expLocationCtrls.values.forEach((c) => c.dispose());
-_expDatesCtrls.values.forEach((c) => c.dispose());
-_expDurationCtrls.values.forEach((c) => c.dispose());
-_expDetailCtrls.values.forEach((list) => list.forEach((c) => c.dispose()));
+    _expTitleCtrls.values.forEach((c) => c.dispose());
+    _expCompanyCtrls.values.forEach((c) => c.dispose());
+    _expLocationCtrls.values.forEach((c) => c.dispose());
+    _expDatesCtrls.values.forEach((c) => c.dispose());
+    _expDurationCtrls.values.forEach((c) => c.dispose());
+    _expDetailCtrls.values.forEach((list) => list.forEach((c) => c.dispose()));
 
 // Dispose project controllers
-_projectTitleCtrls.values.forEach((c) => c.dispose());
-_projectDescCtrls.values.forEach((c) => c.dispose());
+    _projectTitleCtrls.values.forEach((c) => c.dispose());
+    _projectDescCtrls.values.forEach((c) => c.dispose());
 
 // Dispose education controllers
-_eduDegreeCtrls.values.forEach((c) => c.dispose());
-_eduInstitutionCtrls.values.forEach((c) => c.dispose());
-_eduLocationCtrls.values.forEach((c) => c.dispose());
-_eduDateCtrls.values.forEach((c) => c.dispose());
-_eduGpaCtrls.values.forEach((c) => c.dispose());
+    _eduDegreeCtrls.values.forEach((c) => c.dispose());
+    _eduInstitutionCtrls.values.forEach((c) => c.dispose());
+    _eduLocationCtrls.values.forEach((c) => c.dispose());
+    _eduDateCtrls.values.forEach((c) => c.dispose());
+    _eduGpaCtrls.values.forEach((c) => c.dispose());
 
 // Dispose certification controllers
-_certTitleCtrls.values.forEach((c) => c.dispose());
-_certIssuerCtrls.values.forEach((c) => c.dispose());
-_certDateCtrls.values.forEach((c) => c.dispose());
+    _certTitleCtrls.values.forEach((c) => c.dispose());
+    _certIssuerCtrls.values.forEach((c) => c.dispose());
+    _certDateCtrls.values.forEach((c) => c.dispose());
 
-super.dispose();
-}
+    super.dispose();
+  }
 
-@override
-Widget build(BuildContext context) {
-final template = TemplateDefault(cv, null);
-final sections = template.getOrderedSections();
+  @override
+  Widget build(BuildContext context) {
+    final template = TemplateDefault(cv, null);
+    final sections = template.getOrderedSections();
 
-return Stack(
-children: [
-Scaffold(
-backgroundColor: Colors.white,
-appBar: AppBar(
-title: const Text("CV Preview"),
-backgroundColor: const Color(0xFFE8F3F8),
-centerTitle: true,
-actions: [
-PopupMenuButton<String>(
-onSelected: (value) async {
-switch (value) {
-case "download":
-final file = await TemplateService(cv).buildPdf();
-if (context.mounted) {
-ScaffoldMessenger.of(context).showSnackBar(
-SnackBar(
-content: Text(
-"CV saved to Downloads/${file.uri.pathSegments.last}",
-style: const TextStyle(color: Colors.white, fontSize: 14),
-),
-backgroundColor: Colors.blue.shade700,
-duration: const Duration(seconds: 4),
-action: SnackBarAction(
-label: "OPEN",
-textColor: Colors.amberAccent,
-onPressed: () => OpenFilex.open(file.path),
-),
-behavior: SnackBarBehavior.floating,
-shape: RoundedRectangleBorder(
-borderRadius: BorderRadius.circular(12),
-),
-),
-);
-}
-break;
+    return Stack(
+      children: [
+        Scaffold(
+          backgroundColor: Colors.white,
+          appBar: AppBar(
+            title: const Text("CV Preview"),
+            backgroundColor: const Color(0xFFE8F3F8),
+            centerTitle: true,
+            actions: [
+              PopupMenuButton<String>(
+                onSelected: (value) async {
+                  switch (value) {
+                    case "download":
+                      final file = await TemplateService(cv).buildPdf();
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              "CV saved to Downloads/${file.uri.pathSegments.last}",
+                              style: const TextStyle(color: Colors.white, fontSize: 14),
+                            ),
+                            backgroundColor: Colors.blue.shade700,
+                            duration: const Duration(seconds: 4),
+                            action: SnackBarAction(
+                              label: "OPEN",
+                              textColor: Colors.amberAccent,
+                              onPressed: () => OpenFilex.open(file.path),
+                            ),
+                            behavior: SnackBarBehavior.floating,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                        );
+                      }
+                      break;
 
-case "share":
-final file = await TemplateService(cv).buildPdf();
-await Share.shareXFiles([XFile(file.path)], text: "Check out my CV!");
-break;
+                    case "share":
+                      final file = await TemplateService(cv).buildPdf();
+                      await Share.shareXFiles([XFile(file.path)], text: "Check out my CV!");
+                      break;
 
-case "save":
-await _showSaveToLibraryDialog(context);
-break;
+                    case "save":
+                      await _showSaveToLibraryDialog(context);
+                      break;
 
-case "new":
-await _startNewCV(context);
-break;
-}
-},
-itemBuilder: (context) => const [
-PopupMenuItem(value: "download", child: Text("Download PDF")),
-PopupMenuItem(value: "share", child: Text("Share")),
-PopupMenuItem(value: "save", child: Text("Save to Library")),
-PopupMenuItem(value: "new", child: Text("New CV")),
-],
-),
-],
-),
-body: ListView.builder(
-padding: const EdgeInsets.all(24),
-itemCount: sections.length,
-itemBuilder: (context, index) {
-final s = sections[index];
-final type = s['type'] as String;
-final original = s['data'];
-final data = _mergeWithOverride(type, original);
-return _buildSection(type, data, context);
-},
-),
-),
-if (_saving)
-const Positioned.fill(
-child: ColoredBox(
-color: Color(0x33000000),
-child: Center(child: CircularProgressIndicator()),
-),
-)
-],
-);
-}
+                    case "new":
+                      await _startNewCV(context);
+                      break;
+                  }
+                },
+                itemBuilder: (context) => const [
+                  PopupMenuItem(value: "download", child: Text("Download PDF")),
+                  PopupMenuItem(value: "share", child: Text("Share")),
+                  PopupMenuItem(value: "save", child: Text("Save to Library")),
+                  PopupMenuItem(value: "new", child: Text("New CV")),
+                ],
+              ),
+            ],
+          ),
+          body: ListView.builder(
+            padding: const EdgeInsets.all(24),
+            itemCount: sections.length,
+            itemBuilder: (context, index) {
+              final s = sections[index];
+              final type = s['type'] as String;
+              final original = s['data'];
+              final data = _mergeWithOverride(type, original);
+              return _buildSection(type, data, context);
+            },
+          ),
+        ),
+        if (_saving)
+          const Positioned.fill(
+            child: ColoredBox(
+              color: Color(0x33000000),
+              child: Center(child: CircularProgressIndicator()),
+            ),
+          )
+      ],
+    );
+  }
 
 // ======= Save & persistence helpers =======
 
@@ -332,48 +315,48 @@ child: Center(child: CircularProgressIndicator()),
     return {};
   }
 
-Future<void> _applyPatchToCv({
-required String section,
-required dynamic value,
-}) async {
+  Future<void> _applyPatchToCv({
+    required String section,
+    required dynamic value,
+  }) async {
 // 1️⃣ Update local CV data
-final current = cv.cvData[section];
+    final current = cv.cvData[section];
 
-if (value is Map<String, dynamic>) {
+    if (value is Map<String, dynamic>) {
 // Merge maps (header, contact, etc.)
-cv.cvData[section] = {
-..._asMap(current),
-...value,
-};
-} else if (value is List) {
+      cv.cvData[section] = {
+        ..._asMap(current),
+        ...value,
+      };
+    } else if (value is List) {
 // Replace list sections wholesale
-cv.cvData[section] = List.from(value);
-} else {
+      cv.cvData[section] = List.from(value);
+    } else {
 // Replace scalar values (strings, numbers, etc.)
-cv.cvData[section] = value;
-}
+      cv.cvData[section] = value;
+    }
 
 // Refresh UI immediately
-if (mounted) setState(() {});
+    if (mounted) setState(() {});
 
 // 2️⃣ Persist the patch to Firestore (lighter than full overwrite)
-try {
-final docRef = FirebaseFirestore.instance
-    .collection('users')
-    .doc(cv.userId)
-    .collection('aiGeneratedCVs')
-    .doc(cv.cvId);
+    try {
+      final docRef = FirebaseFirestore.instance
+          .collection('users')
+          .doc(cv.userId)
+          .collection('aiGeneratedCVs')
+          .doc(cv.cvId);
 
-await docRef.update({
-'cvData.$section': cv.cvData[section],
-'updatedAt': FieldValue.serverTimestamp(),
-});
+      await docRef.update({
+        'cvData.$section': cv.cvData[section],
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
 
-debugPrint("✅ [$section] updated and synced to Firestore.");
-} catch (e) {
-debugPrint("❌ Failed to sync [$section]: $e");
-}
-}
+      debugPrint("✅ [$section] updated and synced to Firestore.");
+    } catch (e) {
+      debugPrint("❌ Failed to sync [$section]: $e");
+    }
+  }
 
   Future<void> _persistPatchToFirestore({
     required String section,
@@ -415,105 +398,105 @@ debugPrint("❌ Failed to sync [$section]: $e");
 
 // ======= Dialogs & menu actions =======
 
-Future<bool> _showConfirmDialog(BuildContext context) async {
-return await showDialog<bool>(
-context: context,
-builder: (context) => AlertDialog(
-title: const Text("Start a New CV?"),
-content: const Text(
-"Creating a new CV will erase your current CV data. Do you want to continue?"),
-actions: [
-TextButton(
-onPressed: () => Navigator.of(context).pop(false),
-child: const Text("No"),
-),
-ElevatedButton(
-onPressed: () => Navigator.of(context).pop(true),
-child: const Text("Yes"),
-),
-],
-),
-) ??
-false;
-}
+  Future<bool> _showConfirmDialog(BuildContext context) async {
+    return await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Start a New CV?"),
+        content: const Text(
+            "Creating a new CV will erase your current CV data. Do you want to continue?"),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text("No"),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text("Yes"),
+          ),
+        ],
+      ),
+    ) ??
+        false;
+  }
 
-Future<void> _startNewCV(BuildContext context) async {
-final confirm = await _showConfirmDialog(context);
-if (!confirm) return;
+  Future<void> _startNewCV(BuildContext context) async {
+    final confirm = await _showConfirmDialog(context);
+    if (!confirm) return;
 
-try {
-await FirestoreService().clearLastCV(cv.userId);
-if (!context.mounted) return;
-Navigator.pushReplacementNamed(
-context,
-AppRoutes.voiceInput,
-arguments: {
-'forceNew': true,
-'resume': false,
-'cvId': 'cv_${DateTime.now().millisecondsSinceEpoch}',
-'cvData': {},
-},
-);
-} catch (e) {
-ScaffoldMessenger.of(context).showSnackBar(
-const SnackBar(content: Text("Failed to start a new CV.")),
-);
-}
-}
+    try {
+      await FirestoreService().clearLastCV(cv.userId);
+      if (!context.mounted) return;
+      Navigator.pushReplacementNamed(
+        context,
+        AppRoutes.voiceInput,
+        arguments: {
+          'forceNew': true,
+          'resume': false,
+          'cvId': 'cv_${DateTime.now().millisecondsSinceEpoch}',
+          'cvData': {},
+        },
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Failed to start a new CV.")),
+      );
+    }
+  }
 
-Future<void> _showSaveToLibraryDialog(BuildContext context) async {
-final TextEditingController filenameController = TextEditingController(text: "My CV");
+  Future<void> _showSaveToLibraryDialog(BuildContext context) async {
+    final TextEditingController filenameController = TextEditingController(text: "My CV");
 
-final saveConfirmed = await showDialog<bool>(
-context: context,
-builder: (_) => AlertDialog(
-title: const Text("Save CV to Library"),
-content: TextField(
-controller: filenameController,
-decoration: const InputDecoration(labelText: "Enter CV name"),
-),
-actions: [
-TextButton(
-onPressed: () => Navigator.pop(context, false),
-child: const Text("Cancel"),
-),
-ElevatedButton(
-onPressed: () => Navigator.pop(context, true),
-child: const Text("Save"),
-),
-],
-),
-);
+    final saveConfirmed = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text("Save CV to Library"),
+        content: TextField(
+          controller: filenameController,
+          decoration: const InputDecoration(labelText: "Enter CV name"),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text("Cancel"),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text("Save"),
+          ),
+        ],
+      ),
+    );
 
-if (saveConfirmed != true) return;
+    if (saveConfirmed != true) return;
 
-final filename = filenameController.text.trim();
-if (filename.isEmpty) return;
+    final filename = filenameController.text.trim();
+    if (filename.isEmpty) return;
 
-try {
-await FirestoreService().saveCVToLibrary(
-cv.userId,
-cv,
-customName: filename,
-);
+    try {
+      await FirestoreService().saveCVToLibrary(
+        cv.userId,
+        cv,
+        customName: filename,
+      );
 
-if (context.mounted) {
-ScaffoldMessenger.of(context).showSnackBar(
-SnackBar(
-content: Text("'$filename' saved to Library", style: const TextStyle(color: Colors.white)),
-backgroundColor: Colors.blue,
-duration: const Duration(seconds: 4),
-),
-);
-}
-} catch (e) {
-if (context.mounted) {
-ScaffoldMessenger.of(context).showSnackBar(
-SnackBar(content: Text("❌ Failed to save CV: $e")),
-);
-}
-}
-}
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("'$filename' saved to Library", style: const TextStyle(color: Colors.white)),
+            backgroundColor: Colors.blue,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("❌ Failed to save CV: $e")),
+        );
+      }
+    }
+  }
 
 // ======= Render sections (with edit capability) =======
 
@@ -560,36 +543,15 @@ SnackBar(content: Text("❌ Failed to save CV: $e")),
     }
   }
 
-dynamic _mergeWithOverride(String section, dynamic original) {
-final override = _overrides[section];
-if (override == null) return original;
+  dynamic _mergeWithOverride(String section, dynamic original) {
+    final override = _overrides[section];
+    if (override == null) return original;
 
-if (original is Map && override is Map) {
-  return {...Map<String, dynamic>.from(original), ...Map<String, dynamic>.from(override)};
-}
-// Lists or scalars just replace
-return override;
-}
-
-// KEEP ONLY THIS VERSION
-  bool _getEnhancingState(String fieldType) {
-    switch (fieldType) {
-      case 'email': return _enhancingContact;
-      case 'location': return _enhancingContact;
-      case 'phone': return _enhancingContact;
-      case 'github': return _enhancingContact;
-      case 'linkedin': return _enhancingContact;
-      case 'website': return _enhancingContact;
-      case 'header': return _enhancingHeader;
-      case 'contact': return _enhancingContact;
-      case 'skills': return _enhancingSkills;
-      case 'experience': return _enhancingExperience;
-      case 'projects': return _enhancingProjects;
-      case 'education': return _enhancingEducation;
-      case 'certifications': return _enhancingCertifications;
-      case 'languages': return _enhancingLanguages;
-      default: return false;
+    if (original is Map && override is Map) {
+      return {...Map<String, dynamic>.from(original), ...Map<String, dynamic>.from(override)};
     }
+// Lists or scalars just replace
+    return override;
   }
 
 // ----- Header -----
@@ -600,7 +562,7 @@ return override;
 
     if (!_editingHeader) {
       return Padding(
-        padding: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.only(bottom: 10),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -619,23 +581,7 @@ return override;
                               style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
                             ),
                           ),
-                          const SizedBox(width: 8),
-                          // AI Enhance Button
-                          _enhancingHeader
-                              ? const SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                              : IconButton(
-                            tooltip: 'Enhance with AI',
-                            onPressed: () => _enhanceField('header', {'name': name, 'summary': summary}),
-                            icon: const Icon(Icons.auto_awesome, size: 18),
-                            padding: EdgeInsets.zero,
-                            constraints: const BoxConstraints(),
-                          ),
-                          const SizedBox(width: 8),
-                          // Edit Button
+                          const SizedBox(width: 8), // 2 spaces distance
                           IconButton(
                             tooltip: 'Edit header',
                             onPressed: () {
@@ -780,46 +726,19 @@ return override;
           Positioned(
             right: 0,
             top: 0,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // AI Enhance Button
-                _enhancingContact
-                    ? const SizedBox(
-                  width: 18,
-                  height: 18,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.black),
-                  ),
-                )
-                    : IconButton(
-                  onPressed: () {
-                    _enhanceContactField(data);
-                  },
-                  icon: const Icon(Icons.auto_awesome, size: 18, color: Colors.black),
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
-                ),
-                const SizedBox(width: 4),
-                // Edit Button
-                IconButton(
-                  onPressed: () {
-                    setState(() {
-                      _editingContact = true;
-                      _emailCtrl.text = (m['email'] ?? '').toString();
-                      _locationCtrl.text = (m['location'] ?? '').toString();
-                      _phoneCtrl.text = (m['phone'] ?? '').toString();
-                      _githubCtrl.text = (m['github'] ?? '').toString();
-                      _linkedinCtrl.text = (m['linkedin'] ?? '').toString();
-                      _websiteCtrl.text = (m['website'] ?? '').toString();
-                    });
-                  },
-                  icon: const Icon(Icons.edit, size: 18, color: Colors.black),
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
-                ),
-              ],
+            child: IconButton(
+              onPressed: () {
+                setState(() {
+                  _editingContact = true;
+                  _emailCtrl.text = (m['email'] ?? '').toString();
+                  _locationCtrl.text = (m['location'] ?? '').toString();
+                  _phoneCtrl.text = (m['phone'] ?? '').toString();
+                  _githubCtrl.text = (m['github'] ?? '').toString();
+                  _linkedinCtrl.text = (m['linkedin'] ?? '').toString();
+                  _websiteCtrl.text = (m['website'] ?? '').toString();
+                });
+              },
+              icon: const Icon(Icons.edit, color: Colors.black),
             ),
           )
         ],
@@ -827,17 +746,17 @@ return override;
     }
 
     return Card(
-      margin: const EdgeInsets.only(top: 12, bottom: 12),
+      margin: const EdgeInsets.only(top: 12, bottom: 12,),
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: Column(
           children: [
-            _enhanceableContactField(_emailCtrl, 'Email', Icons.email, 'email'),
-            _enhanceableContactField(_locationCtrl, 'Location', Icons.location_on, 'location'),
-            _enhanceableContactField(_phoneCtrl, 'Phone', Icons.phone, 'phone'),
-            _enhanceableContactField(_githubCtrl, 'GitHub', Icons.code, 'github'),
-            _enhanceableContactField(_linkedinCtrl, 'LinkedIn', Icons.link, 'linkedin'),
-            _enhanceableContactField(_websiteCtrl, 'Website', Icons.public, 'website'),
+            _contactField(_emailCtrl, 'Email', Icons.email),
+            _contactField(_locationCtrl, 'Location', Icons.location_on),
+            _contactField(_phoneCtrl, 'Phone', Icons.phone),
+            _contactField(_githubCtrl, 'GitHub', Icons.code),
+            _contactField(_linkedinCtrl, 'LinkedIn', Icons.link),
+            _contactField(_websiteCtrl, 'Website', Icons.public),
             const SizedBox(height: 8),
             Row(children: [
               ElevatedButton.icon(
@@ -867,127 +786,18 @@ return override;
     );
   }
 
-// New method for enhanceable contact fields with AI button
-  Widget _enhanceableContactField(TextEditingController c, String label, IconData icon, String fieldType) {
+  Widget _contactField(TextEditingController c, String label, IconData icon) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8.0),
-      child: Row(
-        children: [
-          Expanded(
-            child: TextField(
-              controller: c,
-              decoration: InputDecoration(
-                labelText: label,
-                prefixIcon: Icon(icon),
-                border: const OutlineInputBorder(),
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
-          // AI Enhance Button for individual field
-          _getEnhancingState(fieldType)
-              ? const SizedBox(
-            width: 18,
-            height: 18,
-            child: CircularProgressIndicator(strokeWidth: 2),
-          )
-              : IconButton(
-            tooltip: 'Enhance with AI',
-            onPressed: () => _enhanceContactField({fieldType: c.text}, specificField: fieldType),
-            icon: const Icon(Icons.auto_awesome, size: 18),
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(),
-          ),
-        ],
+      child: TextField(
+        controller: c,
+        decoration: InputDecoration(
+          labelText: label,
+          prefixIcon: Icon(icon),
+          border: const OutlineInputBorder(),
+        ),
       ),
     );
-  }
-
-// Method to enhance contact field
-  void _enhanceContactField(Map<String, dynamic> contactData, {String? specificField}) async {
-    setState(() {
-      if (specificField != null) {
-        _setEnhancingState(specificField, true);
-      } else {
-        _enhancingContact = true;
-      }
-    });
-
-    try {
-      final aiService = AIService();
-      String prompt = """
-Please enhance the following contact information to make it more professional and standardized.
-Follow these guidelines:
-- Email: Ensure proper format (name@domain.com)
-- Phone: Format with country code if missing (e.g., +1 123-456-7890)
-- Location: Use standard format (City, State/Country)
-- URLs: Ensure they are complete and use standard formats
-- Make all information consistent and professional
-
-Contact information to enhance:
-${contactData.entries.map((e) => "${e.key}: ${e.value}").join("\n")}
-""";
-
-      final enhancedContent = await aiService.polishCV(contactData);
-
-      // Parse the enhanced content and update the appropriate fields
-      _updateContactFields(enhancedContent, specificField: specificField);
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('AI enhancement failed: $e')),
-        );
-      }
-    } finally {
-      setState(() {
-        if (specificField != null) {
-          _setEnhancingState(specificField, false);
-        } else {
-          _enhancingContact = false;
-        }
-      });
-    }
-  }
-
-// Helper method to update contact fields with AI-enhanced content
-  void _updateContactFields(String enhancedContent, {String? specificField}) {
-    // Parse the enhanced content and update the appropriate controllers
-    // This is a simplified implementation - you might want to refine it
-
-    final lines = enhancedContent.split('\n');
-    for (var line in lines) {
-      if (line.toLowerCase().contains('email:')) {
-        final email = line.split(':').length > 1 ? line.split(':')[1].trim() : '';
-        if (specificField == null || specificField == 'email') {
-          _emailCtrl.text = email;
-        }
-      } else if (line.toLowerCase().contains('location:')) {
-        final location = line.split(':').length > 1 ? line.split(':')[1].trim() : '';
-        if (specificField == null || specificField == 'location') {
-          _locationCtrl.text = location;
-        }
-      } else if (line.toLowerCase().contains('phone:')) {
-        final phone = line.split(':').length > 1 ? line.split(':')[1].trim() : '';
-        if (specificField == null || specificField == 'phone') {
-          _phoneCtrl.text = phone;
-        }
-      } else if (line.toLowerCase().contains('github:')) {
-        final github = line.split(':').length > 1 ? line.split(':')[1].trim() : '';
-        if (specificField == null || specificField == 'github') {
-          _githubCtrl.text = github;
-        }
-      } else if (line.toLowerCase().contains('linkedin:')) {
-        final linkedin = line.split(':').length > 1 ? line.split(':')[1].trim() : '';
-        if (specificField == null || specificField == 'linkedin') {
-          _linkedinCtrl.text = linkedin;
-        }
-      } else if (line.toLowerCase().contains('website:')) {
-        final website = line.split(':').length > 1 ? line.split(':')[1].trim() : '';
-        if (specificField == null || specificField == 'website') {
-          _websiteCtrl.text = website;
-        }
-      }
-    }
   }
 
 // ----- Skills -----
@@ -1003,23 +813,7 @@ ${contactData.entries.map((e) => "${e.key}: ${e.value}").join("\n")}
               children: [
                 Text("SKILLS".toUpperCase(),
                     style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black)),
-                const SizedBox(width: 8),
-                // AI Enhance Button
-                _enhancingSkills
-                    ? const SizedBox(
-                  width: 18,
-                  height: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-                    : IconButton(
-                  tooltip: 'Enhance skills with AI',
-                  onPressed: () => _enhanceSkills(skills),
-                  icon: const Icon(Icons.auto_awesome, size: 18),
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
-                ),
-                const SizedBox(width: 8),
-                // Edit Button
+                const SizedBox(width: 8), // 2 spaces distance
                 IconButton(
                   tooltip: 'Edit skills',
                   onPressed: () {
@@ -1074,36 +868,15 @@ ${contactData.entries.map((e) => "${e.key}: ${e.value}").join("\n")}
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Wrap(
-                    spacing: 8,
-                    runSpacing: -8,
-                    children: _skillsWorking
-                        .map((s) => InputChip(
-                      label: Text(s),
-                      onDeleted: () => setState(() => _skillsWorking.remove(s)),
-                    ))
-                        .toList(),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                // AI Enhance Button in Edit Mode
-                _enhancingSkills
-                    ? const SizedBox(
-                  width: 18,
-                  height: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-                    : IconButton(
-                  tooltip: 'Enhance skills with AI',
-                  onPressed: () => _enhanceSkills(_skillsWorking),
-                  icon: const Icon(Icons.auto_awesome, size: 18),
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
-                ),
-              ],
+            Wrap(
+              spacing: 8,
+              runSpacing: -8,
+              children: _skillsWorking
+                  .map((s) => InputChip(
+                label: Text(s),
+                onDeleted: () => setState(() => _skillsWorking.remove(s)),
+              ))
+                  .toList(),
             ),
             const SizedBox(height: 8),
             Row(children: [
@@ -1147,56 +920,17 @@ ${contactData.entries.map((e) => "${e.key}: ${e.value}").join("\n")}
     );
   }
 
-// Add this method to handle skills enhancement
-  void _enhanceSkills(List<String> currentSkills) async {
-    if (!mounted) return;
-
-    setState(() => _enhancingSkills = true);
-
-    try {
-      final aiService = AIService();
-      final enhancedSkills = await aiService.polishCV({'skills': currentSkills});
-
-      // Parse the enhanced skills
-      final newSkills = enhancedSkills.split(',')
-          .map((skill) => skill.trim())
-          .where((skill) => skill.isNotEmpty)
-          .toList();
-
-      if (mounted) {
-        setState(() {
-          _skillsWorking = newSkills;
-        });
-      }
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Skills enhanced with AI!')),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('AI enhancement failed: $e')),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _enhancingSkills = false);
-      }
-    }
+  void _addSkill() {
+    final t = _newSkillCtrl.text.trim();
+    if (t.isEmpty) return;
+    setState(() {
+      if (!_skillsWorking.contains(t)) _skillsWorking.add(t);
+      _newSkillCtrl.clear();
+    });
   }
 
-void _addSkill() {
-final t = _newSkillCtrl.text.trim();
-if (t.isEmpty) return;
-setState(() {
-if (!_skillsWorking.contains(t)) _skillsWorking.add(t);
-_newSkillCtrl.clear();
-});
-}
-
 // ----- Languages (chips editor, like skills) -----
+// ----- Languages -----
   Widget _buildLanguages(List<String> languages) {
     if (!_editingLanguages) {
       return Column(
@@ -1207,23 +941,7 @@ _newSkillCtrl.clear();
             children: [
               Text("LANGUAGES".toUpperCase(),
                   style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black)),
-              const SizedBox(width: 8),
-              // AI Enhance Button
-              _enhancingLanguages
-                  ? const SizedBox(
-                width: 18,
-                height: 18,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              )
-                  : IconButton(
-                tooltip: 'Enhance languages with AI',
-                onPressed: () => _enhanceLanguages(languages),
-                icon: const Icon(Icons.auto_awesome, size: 18),
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(),
-              ),
-              const SizedBox(width: 8),
-              // Edit Button
+              const SizedBox(width: 8), // 2 spaces distance
               IconButton(
                 tooltip: 'Edit languages',
                 onPressed: () {
@@ -1253,42 +971,20 @@ _newSkillCtrl.clear();
         ],
       );
     }
-
     return _sectionBlock(
       "LANGUAGES",
       Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: Wrap(
-                  spacing: 8,
-                  runSpacing: -8,
-                  children: _langsWorking
-                      .map((s) => InputChip(
-                    label: Text(s),
-                    onDeleted: () => setState(() => _langsWorking.remove(s)),
-                  ))
-                      .toList(),
-                ),
-              ),
-              const SizedBox(width: 8),
-              // AI Enhance Button in Edit Mode
-              _enhancingLanguages
-                  ? const SizedBox(
-                width: 18,
-                height: 18,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              )
-                  : IconButton(
-                tooltip: 'Enhance languages with AI',
-                onPressed: () => _enhanceLanguages(_langsWorking),
-                icon: const Icon(Icons.auto_awesome, size: 18),
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(),
-              ),
-            ],
+          Wrap(
+            spacing: 8,
+            runSpacing: -8,
+            children: _langsWorking
+                .map((s) => InputChip(
+              label: Text(s),
+              onDeleted: () => setState(() => _langsWorking.remove(s)),
+            ))
+                .toList(),
           ),
           const SizedBox(height: 8),
           Row(children: [
@@ -1331,50 +1027,15 @@ _newSkillCtrl.clear();
     );
   }
 
-// Add this method to handle languages enhancement
-  void _enhanceLanguages(List<String> currentLanguages) async {
-    setState(() => _enhancingLanguages = true);
-
-    try {
-      final aiService = AIService();
-      final enhancedLanguages = await aiService.polishCV({'languages': currentLanguages});
-
-      // Parse the enhanced languages
-      final newLanguages = enhancedLanguages.split(',')
-          .map((lang) => lang.trim())
-          .where((lang) => lang.isNotEmpty)
-          .toList();
-
-      setState(() {
-        _langsWorking = newLanguages;
-      });
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Languages enhanced with AI!')),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('AI enhancement failed: $e')),
-        );
-      }
-    } finally {
-      setState(() => _enhancingLanguages = false);
-    }
+  void _addLanguage() {
+    final t = _newLangCtrl.text.trim();
+    if (t.isEmpty) return;
+    setState(() {
+      if (!_langsWorking.contains(t)) _langsWorking.add(t);
+      _newLangCtrl.clear();
+    });
   }
 
-void _addLanguage() {
-final t = _newLangCtrl.text.trim();
-if (t.isEmpty) return;
-setState(() {
-if (!_langsWorking.contains(t)) _langsWorking.add(t);
-_newLangCtrl.clear();
-});
-}
-
-// Generic section with edit button and AI enhance button
   Widget _buildComplexWithEditor(String title, String sectionKey, dynamic data, {required VoidCallback onEdit}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1384,23 +1045,7 @@ _newLangCtrl.clear();
           children: [
             Text(title.toUpperCase(),
                 style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black)),
-            const SizedBox(width: 8),
-            // AI Enhance Button
-            _getSectionEnhancingState(sectionKey)
-                ? const SizedBox(
-              width: 18,
-              height: 18,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            )
-                : IconButton(
-              tooltip: 'Enhance with AI',
-              onPressed: () => _enhanceField(sectionKey, data.toString()),
-              icon: const Icon(Icons.auto_awesome, size: 18),
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(),
-            ),
-            const SizedBox(width: 8),
-            // Edit Button
+            const SizedBox(width: 8), // 2 spaces distance
             IconButton(
               tooltip: 'Edit $title',
               onPressed: onEdit,
@@ -1415,7 +1060,6 @@ _newLangCtrl.clear();
       ],
     );
   }
-
 
   Widget _renderComplexWithoutTitle(String title, dynamic data) {
     switch (title) {
@@ -1541,646 +1185,646 @@ _newLangCtrl.clear();
   }
 // ======= Initialize editing for complex sections =======
 
-void _initExperienceEditing(dynamic data) {
-setState(() {
-_editingExperience = true;
-_experienceWorking = List<Map<String, dynamic>>.from(data ?? []);
-_initExperienceControllers();
-});
-}
+  void _initExperienceEditing(dynamic data) {
+    setState(() {
+      _editingExperience = true;
+      _experienceWorking = List<Map<String, dynamic>>.from(data ?? []);
+      _initExperienceControllers();
+    });
+  }
 
-void _initExperienceControllers() {
+  void _initExperienceControllers() {
 // Clear existing controllers
-_expTitleCtrls.clear();
-_expCompanyCtrls.clear();
-_expLocationCtrls.clear();
-_expDatesCtrls.clear();
-_expDurationCtrls.clear();
-_expDetailCtrls.clear();
+    _expTitleCtrls.clear();
+    _expCompanyCtrls.clear();
+    _expLocationCtrls.clear();
+    _expDatesCtrls.clear();
+    _expDurationCtrls.clear();
+    _expDetailCtrls.clear();
 
 // Initialize controllers for each experience item
-for (int i = 0; i < _experienceWorking.length; i++) {
-final exp = _experienceWorking[i];
-_expTitleCtrls[i] = TextEditingController(text: exp['title']?.toString() ?? '');
-_expCompanyCtrls[i] = TextEditingController(text: exp['company']?.toString() ?? '');
-_expLocationCtrls[i] = TextEditingController(text: exp['location']?.toString() ?? '');
-_expDatesCtrls[i] = TextEditingController(text: exp['dates']?.toString() ?? '');
-_expDurationCtrls[i] = TextEditingController(text: exp['duration']?.toString() ?? '');
+    for (int i = 0; i < _experienceWorking.length; i++) {
+      final exp = _experienceWorking[i];
+      _expTitleCtrls[i] = TextEditingController(text: exp['title']?.toString() ?? '');
+      _expCompanyCtrls[i] = TextEditingController(text: exp['company']?.toString() ?? '');
+      _expLocationCtrls[i] = TextEditingController(text: exp['location']?.toString() ?? '');
+      _expDatesCtrls[i] = TextEditingController(text: exp['dates']?.toString() ?? '');
+      _expDurationCtrls[i] = TextEditingController(text: exp['duration']?.toString() ?? '');
 
 // Initialize detail controllers
-final details = List<String>.from(exp['details'] ?? []);
-_expDetailCtrls[i] = details.map((detail) => TextEditingController(text: detail)).toList();
-}
-}
+      final details = List<String>.from(exp['details'] ?? []);
+      _expDetailCtrls[i] = details.map((detail) => TextEditingController(text: detail)).toList();
+    }
+  }
 
-void _initProjectsEditing(dynamic data) {
-setState(() {
-_editingProjects = true;
-_projectsWorking = List<Map<String, dynamic>>.from(data ?? []);
-_initProjectsControllers();
-});
-}
+  void _initProjectsEditing(dynamic data) {
+    setState(() {
+      _editingProjects = true;
+      _projectsWorking = List<Map<String, dynamic>>.from(data ?? []);
+      _initProjectsControllers();
+    });
+  }
 
-void _initProjectsControllers() {
-_projectTitleCtrls.clear();
-_projectDescCtrls.clear();
+  void _initProjectsControllers() {
+    _projectTitleCtrls.clear();
+    _projectDescCtrls.clear();
 
-for (int i = 0; i < _projectsWorking.length; i++) {
-final project = _projectsWorking[i];
-_projectTitleCtrls[i] = TextEditingController(text: project['title']?.toString() ?? '');
-_projectDescCtrls[i] = TextEditingController(text: project['description']?.toString() ?? '');
-}
-}
+    for (int i = 0; i < _projectsWorking.length; i++) {
+      final project = _projectsWorking[i];
+      _projectTitleCtrls[i] = TextEditingController(text: project['title']?.toString() ?? '');
+      _projectDescCtrls[i] = TextEditingController(text: project['description']?.toString() ?? '');
+    }
+  }
 
-void _initEducationEditing(dynamic data) {
-setState(() {
-_editingEducation = true;
-_educationWorking = List<Map<String, dynamic>>.from(data ?? []);
-_initEducationControllers();
-});
-}
+  void _initEducationEditing(dynamic data) {
+    setState(() {
+      _editingEducation = true;
+      _educationWorking = List<Map<String, dynamic>>.from(data ?? []);
+      _initEducationControllers();
+    });
+  }
 
-void _initEducationControllers() {
-_eduDegreeCtrls.clear();
-_eduInstitutionCtrls.clear();
-_eduLocationCtrls.clear();
-_eduDateCtrls.clear();
-_eduGpaCtrls.clear();
+  void _initEducationControllers() {
+    _eduDegreeCtrls.clear();
+    _eduInstitutionCtrls.clear();
+    _eduLocationCtrls.clear();
+    _eduDateCtrls.clear();
+    _eduGpaCtrls.clear();
 
-for (int i = 0; i < _educationWorking.length; i++) {
-final edu = _educationWorking[i];
-_eduDegreeCtrls[i] = TextEditingController(text: edu['degree']?.toString() ?? '');
-_eduInstitutionCtrls[i] = TextEditingController(text: edu['institution']?.toString() ?? '');
-_eduLocationCtrls[i] = TextEditingController(text: edu['location']?.toString() ?? '');
-_eduDateCtrls[i] = TextEditingController(text: edu['date']?.toString() ?? '');
-_eduGpaCtrls[i] = TextEditingController(text: edu['gpa']?.toString() ?? '');
-}
-}
+    for (int i = 0; i < _educationWorking.length; i++) {
+      final edu = _educationWorking[i];
+      _eduDegreeCtrls[i] = TextEditingController(text: edu['degree']?.toString() ?? '');
+      _eduInstitutionCtrls[i] = TextEditingController(text: edu['institution']?.toString() ?? '');
+      _eduLocationCtrls[i] = TextEditingController(text: edu['location']?.toString() ?? '');
+      _eduDateCtrls[i] = TextEditingController(text: edu['date']?.toString() ?? '');
+      _eduGpaCtrls[i] = TextEditingController(text: edu['gpa']?.toString() ?? '');
+    }
+  }
 
-void _initCertificationsEditing(dynamic data) {
-setState(() {
-_editingCertifications = true;
-_certificationsWorking = List<Map<String, dynamic>>.from(data ?? []);
-_initCertificationsControllers();
-});
-}
+  void _initCertificationsEditing(dynamic data) {
+    setState(() {
+      _editingCertifications = true;
+      _certificationsWorking = List<Map<String, dynamic>>.from(data ?? []);
+      _initCertificationsControllers();
+    });
+  }
 
-void _initCertificationsControllers() {
-_certTitleCtrls.clear();
-_certIssuerCtrls.clear();
-_certDateCtrls.clear();
+  void _initCertificationsControllers() {
+    _certTitleCtrls.clear();
+    _certIssuerCtrls.clear();
+    _certDateCtrls.clear();
 
-for (int i = 0; i < _certificationsWorking.length; i++) {
-final cert = _certificationsWorking[i];
-_certTitleCtrls[i] = TextEditingController(text: cert['title']?.toString() ?? '');
-_certIssuerCtrls[i] = TextEditingController(text: cert['issuer']?.toString() ?? '');
-_certDateCtrls[i] = TextEditingController(text: cert['date']?.toString() ?? '');
-}
-}
+    for (int i = 0; i < _certificationsWorking.length; i++) {
+      final cert = _certificationsWorking[i];
+      _certTitleCtrls[i] = TextEditingController(text: cert['title']?.toString() ?? '');
+      _certIssuerCtrls[i] = TextEditingController(text: cert['issuer']?.toString() ?? '');
+      _certDateCtrls[i] = TextEditingController(text: cert['date']?.toString() ?? '');
+    }
+  }
 
 // ======= Editors for complex sections =======
 
-Widget _buildExperienceEditor(List<Map<String, dynamic>> experiences) {
-return Card(
-margin: const EdgeInsets.only(bottom: 16),
-child: Padding(
-padding: const EdgeInsets.all(16),
-child: Column(
-crossAxisAlignment: CrossAxisAlignment.start,
-children: [
-const Text(
-"EDIT WORK EXPERIENCE",
-style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-),
-const SizedBox(height: 16),
-..._buildExperienceItems(),
-const SizedBox(height: 16),
-ElevatedButton.icon(
-onPressed: _addExperienceItem,
-icon: const Icon(Icons.add),
-label: const Text('Add Experience'),
-),
-const SizedBox(height: 16),
-Row(
-children: [
-ElevatedButton(
-onPressed: () async {
-await _saveExperience();
-setState(() => _editingExperience = false);
-},
-child: const Text('Save'),
-),
-const SizedBox(width: 12),
-TextButton(
-onPressed: () => setState(() => _editingExperience = false),
-child: const Text('Cancel'),
-),
-],
-),
-],
-),
-),
-);
-}
+  Widget _buildExperienceEditor(List<Map<String, dynamic>> experiences) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 16),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              "EDIT WORK EXPERIENCE",
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 16),
+            ..._buildExperienceItems(),
+            const SizedBox(height: 16),
+            ElevatedButton.icon(
+              onPressed: _addExperienceItem,
+              icon: const Icon(Icons.add),
+              label: const Text('Add Experience'),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                ElevatedButton(
+                  onPressed: () async {
+                    await _saveExperience();
+                    setState(() => _editingExperience = false);
+                  },
+                  child: const Text('Save'),
+                ),
+                const SizedBox(width: 12),
+                TextButton(
+                  onPressed: () => setState(() => _editingExperience = false),
+                  child: const Text('Cancel'),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
-List<Widget> _buildExperienceItems() {
-return _experienceWorking.asMap().entries.map((entry) {
-final index = entry.key;
-return Card(
-margin: const EdgeInsets.only(bottom: 12),
-child: Padding(
-padding: const EdgeInsets.all(12),
-child: Column(
-crossAxisAlignment: CrossAxisAlignment.start,
-children: [
-Row(
-mainAxisAlignment: MainAxisAlignment.spaceBetween,
-children: [
-Text(
-'Experience ${index + 1}',
-style: const TextStyle(fontWeight: FontWeight.bold),
-),
-IconButton(
-icon: const Icon(Icons.delete, color: Colors.red),
-onPressed: () => _removeExperienceItem(index),
-),
-],
-),
-TextField(
-controller: _expTitleCtrls[index],
-decoration: const InputDecoration(labelText: 'Job Title'),
-),
-TextField(
-controller: _expCompanyCtrls[index],
-decoration: const InputDecoration(labelText: 'Company'),
-),
-TextField(
-controller: _expLocationCtrls[index],
-decoration: const InputDecoration(labelText: 'Location'),
-),
-TextField(
-controller: _expDatesCtrls[index],
-decoration: const InputDecoration(labelText: 'Dates (e.g., Jan 2020 - Dec 2022)'),
-),
-TextField(
-controller: _expDurationCtrls[index],
-decoration: const InputDecoration(labelText: 'Duration (e.g., 2 years 3 months)'),
-),
-const SizedBox(height: 8),
-const Text('Responsibilities:', style: TextStyle(fontWeight: FontWeight.bold)),
-..._buildDetailFields(index),
-ElevatedButton(
-onPressed: () => _addDetailField(index),
-child: const Text('Add Responsibility'),
-),
-],
-),
-),
-);
-}).toList();
-}
+  List<Widget> _buildExperienceItems() {
+    return _experienceWorking.asMap().entries.map((entry) {
+      final index = entry.key;
+      return Card(
+        margin: const EdgeInsets.only(bottom: 12),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Experience ${index + 1}',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.delete, color: Colors.red),
+                    onPressed: () => _removeExperienceItem(index),
+                  ),
+                ],
+              ),
+              TextField(
+                controller: _expTitleCtrls[index],
+                decoration: const InputDecoration(labelText: 'Job Title'),
+              ),
+              TextField(
+                controller: _expCompanyCtrls[index],
+                decoration: const InputDecoration(labelText: 'Company'),
+              ),
+              TextField(
+                controller: _expLocationCtrls[index],
+                decoration: const InputDecoration(labelText: 'Location'),
+              ),
+              TextField(
+                controller: _expDatesCtrls[index],
+                decoration: const InputDecoration(labelText: 'Dates (e.g., Jan 2020 - Dec 2022)'),
+              ),
+              TextField(
+                controller: _expDurationCtrls[index],
+                decoration: const InputDecoration(labelText: 'Duration (e.g., 2 years 3 months)'),
+              ),
+              const SizedBox(height: 8),
+              const Text('Responsibilities:', style: TextStyle(fontWeight: FontWeight.bold)),
+              ..._buildDetailFields(index),
+              ElevatedButton(
+                onPressed: () => _addDetailField(index),
+                child: const Text('Add Responsibility'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }).toList();
+  }
 
-List<Widget> _buildDetailFields(int expIndex) {
-if (!_expDetailCtrls.containsKey(expIndex)) {
-return [];
-}
+  List<Widget> _buildDetailFields(int expIndex) {
+    if (!_expDetailCtrls.containsKey(expIndex)) {
+      return [];
+    }
 
-return _expDetailCtrls[expIndex]!.asMap().entries.map((entry) {
-final detailIndex = entry.key;
-final controller = entry.value;
+    return _expDetailCtrls[expIndex]!.asMap().entries.map((entry) {
+      final detailIndex = entry.key;
+      final controller = entry.value;
 
-return Row(
-children: [
-Expanded(
-child: TextField(
-controller: controller,
-decoration: InputDecoration(
-labelText: 'Responsibility ${detailIndex + 1}',
-),
-),
-),
-IconButton(
-icon: const Icon(Icons.remove, color: Colors.red),
-onPressed: () => _removeDetailField(expIndex, detailIndex),
-),
-],
-);
-}).toList();
-}
+      return Row(
+        children: [
+          Expanded(
+            child: TextField(
+              controller: controller,
+              decoration: InputDecoration(
+                labelText: 'Responsibility ${detailIndex + 1}',
+              ),
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.remove, color: Colors.red),
+            onPressed: () => _removeDetailField(expIndex, detailIndex),
+          ),
+        ],
+      );
+    }).toList();
+  }
 
-void _addExperienceItem() {
-setState(() {
-final newIndex = _experienceWorking.length;
-_experienceWorking.add({});
-_expTitleCtrls[newIndex] = TextEditingController();
-_expCompanyCtrls[newIndex] = TextEditingController();
-_expLocationCtrls[newIndex] = TextEditingController();
-_expDatesCtrls[newIndex] = TextEditingController();
-_expDurationCtrls[newIndex] = TextEditingController();
-_expDetailCtrls[newIndex] = [TextEditingController()];
-});
-}
+  void _addExperienceItem() {
+    setState(() {
+      final newIndex = _experienceWorking.length;
+      _experienceWorking.add({});
+      _expTitleCtrls[newIndex] = TextEditingController();
+      _expCompanyCtrls[newIndex] = TextEditingController();
+      _expLocationCtrls[newIndex] = TextEditingController();
+      _expDatesCtrls[newIndex] = TextEditingController();
+      _expDurationCtrls[newIndex] = TextEditingController();
+      _expDetailCtrls[newIndex] = [TextEditingController()];
+    });
+  }
 
-void _removeExperienceItem(int index) {
-setState(() {
-_experienceWorking.removeAt(index);
+  void _removeExperienceItem(int index) {
+    setState(() {
+      _experienceWorking.removeAt(index);
 
 // Remove controllers
-_expTitleCtrls.remove(index);
-_expCompanyCtrls.remove(index);
-_expLocationCtrls.remove(index);
-_expDatesCtrls.remove(index);
-_expDurationCtrls.remove(index);
-_expDetailCtrls.remove(index);
+      _expTitleCtrls.remove(index);
+      _expCompanyCtrls.remove(index);
+      _expLocationCtrls.remove(index);
+      _expDatesCtrls.remove(index);
+      _expDurationCtrls.remove(index);
+      _expDetailCtrls.remove(index);
 
 // Reindex remaining controllers
-_reindexControllers(_expTitleCtrls, index);
-_reindexControllers(_expCompanyCtrls, index);
-_reindexControllers(_expLocationCtrls, index);
-_reindexControllers(_expDatesCtrls, index);
-_reindexControllers(_expDurationCtrls, index);
-_reindexDetailControllers(index);
-});
-}
+      _reindexControllers(_expTitleCtrls, index);
+      _reindexControllers(_expCompanyCtrls, index);
+      _reindexControllers(_expLocationCtrls, index);
+      _reindexControllers(_expDatesCtrls, index);
+      _reindexControllers(_expDurationCtrls, index);
+      _reindexDetailControllers(index);
+    });
+  }
 
-void _reindexControllers(Map<int, TextEditingController> controllers, int removedIndex) {
-final keys = controllers.keys.toList()..sort();
-for (final key in keys) {
-if (key > removedIndex) {
-controllers[key - 1] = controllers[key]!;
-controllers.remove(key);
-}
-}
-}
+  void _reindexControllers(Map<int, TextEditingController> controllers, int removedIndex) {
+    final keys = controllers.keys.toList()..sort();
+    for (final key in keys) {
+      if (key > removedIndex) {
+        controllers[key - 1] = controllers[key]!;
+        controllers.remove(key);
+      }
+    }
+  }
 
-void _reindexDetailControllers(int removedIndex) {
-final keys = _expDetailCtrls.keys.toList()..sort();
-for (final key in keys) {
-if (key > removedIndex) {
-_expDetailCtrls[key - 1] = _expDetailCtrls[key]!;
-_expDetailCtrls.remove(key);
-}
-}
-}
+  void _reindexDetailControllers(int removedIndex) {
+    final keys = _expDetailCtrls.keys.toList()..sort();
+    for (final key in keys) {
+      if (key > removedIndex) {
+        _expDetailCtrls[key - 1] = _expDetailCtrls[key]!;
+        _expDetailCtrls.remove(key);
+      }
+    }
+  }
 
-void _addDetailField(int expIndex) {
-setState(() {
-_expDetailCtrls[expIndex]!.add(TextEditingController());
-});
-}
+  void _addDetailField(int expIndex) {
+    setState(() {
+      _expDetailCtrls[expIndex]!.add(TextEditingController());
+    });
+  }
 
-void _removeDetailField(int expIndex, int detailIndex) {
-setState(() {
-_expDetailCtrls[expIndex]!.removeAt(detailIndex);
-});
-}
+  void _removeDetailField(int expIndex, int detailIndex) {
+    setState(() {
+      _expDetailCtrls[expIndex]!.removeAt(detailIndex);
+    });
+  }
 
-Future<void> _saveExperience() async {
+  Future<void> _saveExperience() async {
 // Convert form data to experience objects
-final List<Map<String, dynamic>> experiences = [];
+    final List<Map<String, dynamic>> experiences = [];
 
-for (int i = 0; i < _experienceWorking.length; i++) {
-final details = _expDetailCtrls[i]!
-    .map((controller) => controller.text.trim())
-    .where((text) => text.isNotEmpty)
-    .toList();
+    for (int i = 0; i < _experienceWorking.length; i++) {
+      final details = _expDetailCtrls[i]!
+          .map((controller) => controller.text.trim())
+          .where((text) => text.isNotEmpty)
+          .toList();
 
-experiences.add({
-'title': _expTitleCtrls[i]!.text.trim(),
-'company': _expCompanyCtrls[i]!.text.trim(),
-'location': _expLocationCtrls[i]!.text.trim(),
-'dates': _expDatesCtrls[i]!.text.trim(),
-'duration': _expDurationCtrls[i]!.text.trim(),
-'details': details,
-});
-}
+      experiences.add({
+        'title': _expTitleCtrls[i]!.text.trim(),
+        'company': _expCompanyCtrls[i]!.text.trim(),
+        'location': _expLocationCtrls[i]!.text.trim(),
+        'dates': _expDatesCtrls[i]!.text.trim(),
+        'duration': _expDurationCtrls[i]!.text.trim(),
+        'details': details,
+      });
+    }
 
-await _savePatch(section: 'experience', value: experiences);
-}
+    await _savePatch(section: 'experience', value: experiences);
+  }
 
-Widget _buildProjectsEditor(List<Map<String, dynamic>> projects) {
-return Card(
-margin: const EdgeInsets.only(bottom: 16),
-child: Padding(
-padding: const EdgeInsets.all(16),
-child: Column(
-crossAxisAlignment: CrossAxisAlignment.start,
-children: [
-const Text(
-"EDIT PROJECTS",
-style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-),
-const SizedBox(height: 16),
-..._buildProjectItems(),
-const SizedBox(height: 16),
-ElevatedButton.icon(
-onPressed: _addProjectItem,
-icon: const Icon(Icons.add),
-label: const Text('Add Project'),
-),
-const SizedBox(height: 16),
-Row(
-children: [
-ElevatedButton(
-onPressed: () async {
-await _saveProjects();
-setState(() => _editingProjects = false);
-},
-child: const Text('Save'),
-),
-const SizedBox(width: 12),
-TextButton(
-onPressed: () => setState(() => _editingProjects = false),
-child: const Text('Cancel'),
-),
-],
-),
-],
-),
-),
-);
-}
+  Widget _buildProjectsEditor(List<Map<String, dynamic>> projects) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 16),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              "EDIT PROJECTS",
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 16),
+            ..._buildProjectItems(),
+            const SizedBox(height: 16),
+            ElevatedButton.icon(
+              onPressed: _addProjectItem,
+              icon: const Icon(Icons.add),
+              label: const Text('Add Project'),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                ElevatedButton(
+                  onPressed: () async {
+                    await _saveProjects();
+                    setState(() => _editingProjects = false);
+                  },
+                  child: const Text('Save'),
+                ),
+                const SizedBox(width: 12),
+                TextButton(
+                  onPressed: () => setState(() => _editingProjects = false),
+                  child: const Text('Cancel'),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
-List<Widget> _buildProjectItems() {
-return _projectsWorking.asMap().entries.map((entry) {
-final index = entry.key;
-return Card(
-margin: const EdgeInsets.only(bottom: 12),
-child: Padding(
-padding: const EdgeInsets.all(12),
-child: Column(
-crossAxisAlignment: CrossAxisAlignment.start,
-children: [
-Row(
-mainAxisAlignment: MainAxisAlignment.spaceBetween,
-children: [
-Text(
-'Project ${index + 1}',
-style: const TextStyle(fontWeight: FontWeight.bold),
-),
-IconButton(
-icon: const Icon(Icons.delete, color: Colors.red),
-onPressed: () => _removeProjectItem(index),
-),
-],
-),
-TextField(
-controller: _projectTitleCtrls[index],
-decoration: const InputDecoration(labelText: 'Project Title'),
-),
-TextField(
-controller: _projectDescCtrls[index],
-maxLines: 3,
-decoration: const InputDecoration(labelText: 'Description'),
-),
-],
-),
-),
-);
-}).toList();
-}
+  List<Widget> _buildProjectItems() {
+    return _projectsWorking.asMap().entries.map((entry) {
+      final index = entry.key;
+      return Card(
+        margin: const EdgeInsets.only(bottom: 12),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Project ${index + 1}',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.delete, color: Colors.red),
+                    onPressed: () => _removeProjectItem(index),
+                  ),
+                ],
+              ),
+              TextField(
+                controller: _projectTitleCtrls[index],
+                decoration: const InputDecoration(labelText: 'Project Title'),
+              ),
+              TextField(
+                controller: _projectDescCtrls[index],
+                maxLines: 3,
+                decoration: const InputDecoration(labelText: 'Description'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }).toList();
+  }
 
-void _addProjectItem() {
-setState(() {
-final newIndex = _projectsWorking.length;
-_projectsWorking.add({});
-_projectTitleCtrls[newIndex] = TextEditingController();
-_projectDescCtrls[newIndex] = TextEditingController();
-});
-}
+  void _addProjectItem() {
+    setState(() {
+      final newIndex = _projectsWorking.length;
+      _projectsWorking.add({});
+      _projectTitleCtrls[newIndex] = TextEditingController();
+      _projectDescCtrls[newIndex] = TextEditingController();
+    });
+  }
 
-void _removeProjectItem(int index) {
-setState(() {
-_projectsWorking.removeAt(index);
-_projectTitleCtrls.remove(index);
-_projectDescCtrls.remove(index);
-_reindexControllers(_projectTitleCtrls, index);
-_reindexControllers(_projectDescCtrls, index);
-});
-}
+  void _removeProjectItem(int index) {
+    setState(() {
+      _projectsWorking.removeAt(index);
+      _projectTitleCtrls.remove(index);
+      _projectDescCtrls.remove(index);
+      _reindexControllers(_projectTitleCtrls, index);
+      _reindexControllers(_projectDescCtrls, index);
+    });
+  }
 
-Future<void> _saveProjects() async {
-final List<Map<String, dynamic>> projects = [];
+  Future<void> _saveProjects() async {
+    final List<Map<String, dynamic>> projects = [];
 
-for (int i = 0; i < _projectsWorking.length; i++) {
-projects.add({
-'title': _projectTitleCtrls[i]!.text.trim(),
-'description': _projectDescCtrls[i]!.text.trim(),
-});
-}
+    for (int i = 0; i < _projectsWorking.length; i++) {
+      projects.add({
+        'title': _projectTitleCtrls[i]!.text.trim(),
+        'description': _projectDescCtrls[i]!.text.trim(),
+      });
+    }
 
-await _savePatch(section: 'projects', value: projects);
-}
+    await _savePatch(section: 'projects', value: projects);
+  }
 
-Widget _buildEducationEditor(List<Map<String, dynamic>> education) {
-return Card(
-margin: const EdgeInsets.only(bottom: 16),
-child: Padding(
-padding: const EdgeInsets.all(16),
-child: Column(
-crossAxisAlignment: CrossAxisAlignment.start,
-children: [
-const Text(
-"EDIT EDUCATION",
-style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-),
-const SizedBox(height: 16),
-..._buildEducationItems(),
-const SizedBox(height: 16),
-ElevatedButton.icon(
-onPressed: _addEducationItem,
-icon: const Icon(Icons.add),
-label: const Text('Add Education'),
-),
-const SizedBox(height: 16),
-Row(
-children: [
-ElevatedButton(
-onPressed: () async {
-await _saveEducation();
-setState(() => _editingEducation = false);
-},
-child: const Text('Save'),
-),
-const SizedBox(width: 12),
-TextButton(
-onPressed: () => setState(() => _editingEducation = false),
-child: const Text('Cancel'),
-),
-],
-),
-],
-),
-),
-);
-}
+  Widget _buildEducationEditor(List<Map<String, dynamic>> education) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 16),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              "EDIT EDUCATION",
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 16),
+            ..._buildEducationItems(),
+            const SizedBox(height: 16),
+            ElevatedButton.icon(
+              onPressed: _addEducationItem,
+              icon: const Icon(Icons.add),
+              label: const Text('Add Education'),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                ElevatedButton(
+                  onPressed: () async {
+                    await _saveEducation();
+                    setState(() => _editingEducation = false);
+                  },
+                  child: const Text('Save'),
+                ),
+                const SizedBox(width: 12),
+                TextButton(
+                  onPressed: () => setState(() => _editingEducation = false),
+                  child: const Text('Cancel'),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
-List<Widget> _buildEducationItems() {
-return _educationWorking.asMap().entries.map((entry) {
-final index = entry.key;
-return Card(
-margin: const EdgeInsets.only(bottom: 12),
-child: Padding(
-padding: const EdgeInsets.all(12),
-child: Column(
-crossAxisAlignment: CrossAxisAlignment.start,
-children: [
-Row(
-mainAxisAlignment: MainAxisAlignment.spaceBetween,
-children: [
-Text(
-'Education ${index + 1}',
-style: const TextStyle(fontWeight: FontWeight.bold),
-),
-IconButton(
-icon: const Icon(Icons.delete, color: Colors.red),
-onPressed: () => _removeEducationItem(index),
-),
-],
-),
-TextField(
-controller: _eduDegreeCtrls[index],
-decoration: const InputDecoration(labelText: 'Degree'),
-),
-TextField(
-controller: _eduInstitutionCtrls[index],
-decoration: const InputDecoration(labelText: 'Institution'),
-),
-TextField(
-controller: _eduLocationCtrls[index],
-decoration: const InputDecoration(labelText: 'Location'),
-),
-TextField(
-controller: _eduDateCtrls[index],
-decoration: const InputDecoration(labelText: 'Date'),
-),
-TextField(
-controller: _eduGpaCtrls[index],
-decoration: const InputDecoration(labelText: 'GPA/Marks'),
-),
-],
-),
-),
-);
-}).toList();
-}
+  List<Widget> _buildEducationItems() {
+    return _educationWorking.asMap().entries.map((entry) {
+      final index = entry.key;
+      return Card(
+        margin: const EdgeInsets.only(bottom: 12),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Education ${index + 1}',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.delete, color: Colors.red),
+                    onPressed: () => _removeEducationItem(index),
+                  ),
+                ],
+              ),
+              TextField(
+                controller: _eduDegreeCtrls[index],
+                decoration: const InputDecoration(labelText: 'Degree'),
+              ),
+              TextField(
+                controller: _eduInstitutionCtrls[index],
+                decoration: const InputDecoration(labelText: 'Institution'),
+              ),
+              TextField(
+                controller: _eduLocationCtrls[index],
+                decoration: const InputDecoration(labelText: 'Location'),
+              ),
+              TextField(
+                controller: _eduDateCtrls[index],
+                decoration: const InputDecoration(labelText: 'Date'),
+              ),
+              TextField(
+                controller: _eduGpaCtrls[index],
+                decoration: const InputDecoration(labelText: 'GPA/Marks'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }).toList();
+  }
 
-void _addEducationItem() {
-setState(() {
-final newIndex = _educationWorking.length;
-_educationWorking.add({});
-_eduDegreeCtrls[newIndex] = TextEditingController();
-_eduInstitutionCtrls[newIndex] = TextEditingController();
-_eduLocationCtrls[newIndex] = TextEditingController();
-_eduDateCtrls[newIndex] = TextEditingController();
-_eduGpaCtrls[newIndex] = TextEditingController();
-});
-}
+  void _addEducationItem() {
+    setState(() {
+      final newIndex = _educationWorking.length;
+      _educationWorking.add({});
+      _eduDegreeCtrls[newIndex] = TextEditingController();
+      _eduInstitutionCtrls[newIndex] = TextEditingController();
+      _eduLocationCtrls[newIndex] = TextEditingController();
+      _eduDateCtrls[newIndex] = TextEditingController();
+      _eduGpaCtrls[newIndex] = TextEditingController();
+    });
+  }
 
-void _removeEducationItem(int index) {
-setState(() {
-_educationWorking.removeAt(index);
-_eduDegreeCtrls.remove(index);
-_eduInstitutionCtrls.remove(index);
-_eduLocationCtrls.remove(index);
-_eduDateCtrls.remove(index);
-_eduGpaCtrls.remove(index);
-_reindexControllers(_eduDegreeCtrls, index);
-_reindexControllers(_eduInstitutionCtrls, index);
-_reindexControllers(_eduLocationCtrls, index);
-_reindexControllers(_eduDateCtrls, index);
-_reindexControllers(_eduGpaCtrls, index);
-});
-}
+  void _removeEducationItem(int index) {
+    setState(() {
+      _educationWorking.removeAt(index);
+      _eduDegreeCtrls.remove(index);
+      _eduInstitutionCtrls.remove(index);
+      _eduLocationCtrls.remove(index);
+      _eduDateCtrls.remove(index);
+      _eduGpaCtrls.remove(index);
+      _reindexControllers(_eduDegreeCtrls, index);
+      _reindexControllers(_eduInstitutionCtrls, index);
+      _reindexControllers(_eduLocationCtrls, index);
+      _reindexControllers(_eduDateCtrls, index);
+      _reindexControllers(_eduGpaCtrls, index);
+    });
+  }
 
-Future<void> _saveEducation() async {
-final List<Map<String, dynamic>> education = [];
+  Future<void> _saveEducation() async {
+    final List<Map<String, dynamic>> education = [];
 
-for (int i = 0; i < _educationWorking.length; i++) {
-education.add({
-'degree': _eduDegreeCtrls[i]!.text.trim(),
-'institution': _eduInstitutionCtrls[i]!.text.trim(),
-'location': _eduLocationCtrls[i]!.text.trim(),
-'date': _eduDateCtrls[i]!.text.trim(),
-'gpa': _eduGpaCtrls[i]!.text.trim(),
-});
-}
+    for (int i = 0; i < _educationWorking.length; i++) {
+      education.add({
+        'degree': _eduDegreeCtrls[i]!.text.trim(),
+        'institution': _eduInstitutionCtrls[i]!.text.trim(),
+        'location': _eduLocationCtrls[i]!.text.trim(),
+        'date': _eduDateCtrls[i]!.text.trim(),
+        'gpa': _eduGpaCtrls[i]!.text.trim(),
+      });
+    }
 
-await _savePatch(section: 'education', value: education);
-}
+    await _savePatch(section: 'education', value: education);
+  }
 
-Widget _buildCertificationsEditor(List<Map<String, dynamic>> certifications) {
-return Card(
-margin: const EdgeInsets.only(bottom: 16),
-child: Padding(
-padding: const EdgeInsets.all(16),
-child: Column(
-crossAxisAlignment: CrossAxisAlignment.start,
-children: [
-const Text(
-"EDIT CERTIFICATIONS",
-style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-),
-const SizedBox(height: 16),
-..._buildCertificationItems(),
-const SizedBox(height: 16),
-ElevatedButton.icon(
-onPressed: _addCertificationItem,
-icon: const Icon(Icons.add),
-label: const Text('Add Certification'),
-),
-const SizedBox(height: 16),
-Row(
-children: [
-ElevatedButton(
-onPressed: () async {
-await _saveCertifications();
-setState(() => _editingCertifications = false);
-},
-child: const Text('Save'),
-),
-const SizedBox(width: 12),
-TextButton(
-onPressed: () => setState(() => _editingCertifications = false),
-child: const Text('Cancel'),
-),
-],
-),
-],
-),
-),
-);
-}
+  Widget _buildCertificationsEditor(List<Map<String, dynamic>> certifications) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 16),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              "EDIT CERTIFICATIONS",
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 16),
+            ..._buildCertificationItems(),
+            const SizedBox(height: 16),
+            ElevatedButton.icon(
+              onPressed: _addCertificationItem,
+              icon: const Icon(Icons.add),
+              label: const Text('Add Certification'),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                ElevatedButton(
+                  onPressed: () async {
+                    await _saveCertifications();
+                    setState(() => _editingCertifications = false);
+                  },
+                  child: const Text('Save'),
+                ),
+                const SizedBox(width: 12),
+                TextButton(
+                  onPressed: () => setState(() => _editingCertifications = false),
+                  child: const Text('Cancel'),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
-List<Widget> _buildCertificationItems() {
-return _certificationsWorking.asMap().entries.map((entry) {
-final index = entry.key;
-return Card(
-margin: const EdgeInsets.only(bottom: 12),
-child: Padding(
-padding: const EdgeInsets.all(12),
-child: Column(
-crossAxisAlignment: CrossAxisAlignment.start,
-children: [
-Row(
-mainAxisAlignment: MainAxisAlignment.spaceBetween,
-children: [
-Text(
-'Certification ${index + 1}',
-style: const TextStyle(fontWeight: FontWeight.bold),
-),
-IconButton(
-icon: const Icon(Icons.delete, color: Colors.red),
-onPressed: () => _removeCertificationItem(index),
-),
-],
-),
-TextField(
-controller: _certTitleCtrls[index],
-decoration: const InputDecoration(labelText: 'Certification Title'),
-),
-TextField(
-controller: _certDateCtrls[index],
+  List<Widget> _buildCertificationItems() {
+    return _certificationsWorking.asMap().entries.map((entry) {
+      final index = entry.key;
+      return Card(
+        margin: const EdgeInsets.only(bottom: 12),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Certification ${index + 1}',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.delete, color: Colors.red),
+                    onPressed: () => _removeCertificationItem(index),
+                  ),
+                ],
+              ),
+              TextField(
+                controller: _certTitleCtrls[index],
+                decoration: const InputDecoration(labelText: 'Certification Title'),
+              ),
+              TextField(
+                controller: _certDateCtrls[index],
                 decoration: const InputDecoration(labelText: 'Date Earned'),
               ),
             ],
@@ -2226,254 +1870,5 @@ controller: _certDateCtrls[index],
     await _savePatch(section: 'certifications', value: certifications);
   }
 
-// Method to enhance field content with AI
-  Future<void> _enhanceField(String fieldType, dynamic currentData) async {
-    _aiPromptCtrl.clear();
-
-    // Check if widget is still mounted before showing dialog
-    if (!mounted) return;
-
-    // Show a dialog for custom AI prompt
-    final enhancedContent = await showDialog<String>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text("Enhance $fieldType with AI"),
-        content: TextField(
-          controller: _aiPromptCtrl,
-          decoration: const InputDecoration(
-            hintText: "Optional: Add specific instructions for AI",
-            labelText: "AI Instructions",
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Cancel"),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              // Call AI service
-              final enhanced = await _callAIService(fieldType, currentData.toString(), _aiPromptCtrl.text);
-              // Check if the dialog is still in the tree before popping
-              if (Navigator.of(context).canPop()) {
-                Navigator.pop(context, enhanced);
-              }
-            },
-            child: const Text("Enhance"),
-          ),
-        ],
-      ),
-    );
-
-    // Check if widget is still mounted before updating state
-    if (!mounted) return;
-
-    if (enhancedContent != null && enhancedContent.isNotEmpty) {
-      // Update the appropriate field based on fieldType
-      _updateFieldWithAI(fieldType, enhancedContent);
-    }
-  }
-
-// Simulate AI service call
-  Future<String> _callAIService(String fieldType, String content, String prompt) async {
-    // Set enhancing state to true
-    if (mounted) {
-      _setEnhancingState(fieldType, true);
-    }
-
-    try {
-      // Initialize your AI service
-      final aiService = AIService();
-
-      // Call the appropriate AI service method based on field type
-      switch (fieldType) {
-        case 'header':
-        // For header, enhance the summary
-          return await aiService.polishSummary(content);
-
-        case 'skills':
-        // For skills, use the general polishCV method
-          final result = await aiService.polishCV({'skills': content.split(',')});
-          return _extractTextFromAIResponse(result);
-
-        case 'experience':
-        // For experience, use generateExperienceBullets
-          try {
-            final expData = _parseExperienceData(content);
-            final bullets = await aiService.generateExperienceBullets(expData);
-            return bullets.join('\n• ');
-          } catch (e) {
-            // Fallback to general polishCV if experience parsing fails
-            final result = await aiService.polishCV({'experience': content});
-            return _extractTextFromAIResponse(result);
-          }
-
-        case 'projects':
-        // For projects, use the general polishCV method
-          final result = await aiService.polishCV({'projects': content});
-          return _extractTextFromAIResponse(result);
-
-        case 'education':
-        // For education, use the general polishCV method
-          final result = await aiService.polishCV({'education': content});
-          return _extractTextFromAIResponse(result);
-
-        case 'certifications':
-        // For certifications, use the general polishCV method
-          final result = await aiService.polishCV({'certifications': content});
-          return _extractTextFromAIResponse(result);
-
-        case 'languages':
-        // For languages, use the general polishCV method
-          final result = await aiService.polishCV({'languages': content.split(',')});
-          return _extractTextFromAIResponse(result);
-
-        default:
-        // For other fields, use polishSummary
-          final result = await aiService.polishSummary(content);
-          return _extractTextFromAIResponse(result);
-      }
-    } catch (e) {
-      // Handle error
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('AI enhancement failed: $e')),
-        );
-      }
-      return content; // Return original content on error
-    } finally {
-      // Reset enhancing state only if widget is still mounted
-      if (mounted) {
-        _setEnhancingState(fieldType, false);
-      }
-    }
-  }
-// Helper method to parse experience data for AI service
-  Map<String, dynamic> _parseExperienceData(String content) {
-    // This is a simplified parser - you might need to adjust based on your data structure
-    try {
-      // Try to parse as JSON first
-      return jsonDecode(content);
-    } catch (e) {
-      // If not JSON, create a simple structure
-      return {
-        'title': 'Experience',
-        'company': 'Company',
-        'details': [content]
-      };
-    }
-  }
-
-// Helper method to set enhancing state
-  void _setEnhancingState(String fieldType, bool value) {
-    setState(() {
-      switch (fieldType) {
-        case 'header':
-          _enhancingHeader = value;
-          break;
-        case 'contact':
-          _enhancingContact = value;
-          break;
-        case 'skills':
-          _enhancingSkills = value;
-          break;
-        case 'experience':
-          _enhancingExperience = value;
-          break;
-        case 'projects':
-          _enhancingProjects = value;
-          break;
-        case 'education':
-          _enhancingEducation = value;
-          break;
-        case 'certifications':
-          _enhancingCertifications = value;
-          break;
-        case 'languages':
-          _enhancingLanguages = value;
-          break;
-      }
-    });
-  }
-
-// Update field with AI-enhanced content
-  void _updateFieldWithAI(String fieldType, String enhancedContent) {
-    // Check if widget is still mounted before updating state
-    if (!mounted) return;
-
-    switch (fieldType) {
-      case 'header':
-      // For header, update both name and summary
-        setState(() {
-          _nameCtrl.text = enhancedContent;
-        });
-        break;
-      case 'skills':
-      // For skills, update the skills list
-        setState(() {
-          _skillsWorking = enhancedContent.split(',')
-              .map((skill) => skill.trim())
-              .where((skill) => skill.isNotEmpty)
-              .toList();
-        });
-        break;
-      case 'languages':
-      // For languages, update the languages list
-        setState(() {
-          _langsWorking = enhancedContent.split(',')
-              .map((lang) => lang.trim())
-              .where((lang) => lang.isNotEmpty)
-              .toList();
-        });
-        break;
-    // Add cases for other field types
-    }
-
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('AI enhancement completed!')),
-      );
-    }
-  }
-
-// Helper method to get enhancing state
-  bool  _getSectionEnhancingState(String sectionKey) {
-    switch (sectionKey) {
-      case 'header': return _enhancingHeader;
-      case 'contact': return _enhancingContact;
-      case 'skills': return _enhancingSkills;
-      case 'experience': return _enhancingExperience;
-      case 'projects': return _enhancingProjects;
-      case 'education': return _enhancingEducation;
-      case 'certifications': return _enhancingCertifications;
-      case 'languages': return _enhancingLanguages;
-      default: return false;
-    }
-  }
-
-  // Add this helper method to extract text from possible JSON responses
-  String _extractTextFromAIResponse(String response) {
-    try {
-      // Try to parse as JSON
-      final jsonResponse = jsonDecode(response);
-
-      // Handle different JSON structures that might be returned by your AI service
-      if (jsonResponse is Map) {
-        if (jsonResponse.containsKey('summary')) {
-          return jsonResponse['summary'];
-        } else if (jsonResponse.containsKey('text')) {
-          return jsonResponse['text'];
-        } else if (jsonResponse.containsKey('result')) {
-          return jsonResponse['result'];
-        }
-      }
-
-      // If it's not a recognized JSON structure, return the original response
-      return response;
-    } catch (e) {
-      // If it's not JSON, return the original response
-      return response;
-    }
-  }
-
+// ... (rest of the code remains the same)
 }
