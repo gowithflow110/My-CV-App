@@ -34,6 +34,7 @@ import 'package:path/path.dart' as path;
 import '../../services/firestore_service.dart';
 import '../../routes/app_routes.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cvapp/services/ai_service.dart';
 
 class PreviewScreen extends StatefulWidget {
 final CVModel cv;
@@ -53,6 +54,19 @@ bool _editingExperience = false;
 bool _editingProjects = false;
 bool _editingEducation = false;
 bool _editingCertifications = false;
+
+// ======= AI Enhancing state =======
+bool _enhancingHeader = false;
+bool _enhancingContact = false;
+bool _enhancingSkills = false;
+bool _enhancingExperience = false;
+bool _enhancingProjects = false;
+bool _enhancingEducation = false;
+bool _enhancingCertifications = false;
+bool _enhancingLanguages = false;
+
+// Add AI prompt controller
+final _aiPromptCtrl = TextEditingController();
 
 // ----- Shared section block -----
   Widget _sectionBlock(String title, Widget child) {
@@ -150,6 +164,9 @@ _linkedinCtrl.dispose();
 _websiteCtrl.dispose();
 _newSkillCtrl.dispose();
 _newLangCtrl.dispose();
+
+// Add AI prompt controller
+_aiPromptCtrl.dispose();
 
 // Dispose experience controllers
 _expTitleCtrls.values.forEach((c) => c.dispose());
@@ -562,7 +579,7 @@ return override;
 
     if (!_editingHeader) {
       return Padding(
-        padding: const EdgeInsets.only(bottom: 10),
+        padding: const EdgeInsets.only(bottom: 12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -581,7 +598,23 @@ return override;
                               style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
                             ),
                           ),
-                          const SizedBox(width: 8), // 2 spaces distance
+                          const SizedBox(width: 8),
+                          // AI Enhance Button
+                          _enhancingHeader
+                              ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                              : IconButton(
+                            tooltip: 'Enhance with AI',
+                            onPressed: () => _enhanceField('header', {'name': name, 'summary': summary}),
+                            icon: const Icon(Icons.auto_awesome, size: 18),
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                          ),
+                          const SizedBox(width: 8),
+                          // Edit Button
                           IconButton(
                             tooltip: 'Edit header',
                             onPressed: () {
@@ -677,128 +710,277 @@ return override;
   }
 
 // ----- Contact -----
-Widget _buildContact(Map<String, dynamic> data) {
-  final Map<String, dynamic> contactData = Map<String, dynamic>.from(data);
-if (!_editingContact) {
-final items = <Widget>[];
-void addItem(IconData icon, String? value) {
-if (value != null && value.trim().isNotEmpty) {
-items.add(
-Row(
-mainAxisSize: MainAxisSize.min,
-children: [
-Icon(icon, size: 16, color: Colors.white),
-const SizedBox(width: 5),
-Flexible(
-child: Text(
-value,
-style: const TextStyle(color: Colors.white, fontSize: 13),
-overflow: TextOverflow.visible,
-),
-),
-],
-),
-);
-}
-}
+  Widget _buildContact(Map<String, dynamic> data) {
+    final Map<String, dynamic> contactData = Map<String, dynamic>.from(data);
+    if (!_editingContact) {
+      final items = <Widget>[];
+      void addItem(IconData icon, String? value) {
+        if (value != null && value.trim().isNotEmpty) {
+          items.add(
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon, size: 16, color: Colors.white),
+                const SizedBox(width: 5),
+                Flexible(
+                  child: Text(
+                    value,
+                    style: const TextStyle(color: Colors.white, fontSize: 13),
+                    overflow: TextOverflow.visible,
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+      }
 
-final m = data;
-addItem(Icons.email, m['email']);
-addItem(Icons.location_on, m['location']);
-addItem(Icons.phone, m['phone']);
-addItem(Icons.code, m['github']);
-addItem(Icons.link, m['linkedin']);
-addItem(Icons.public, m['website']);
+      final m = data;
+      addItem(Icons.email, m['email']);
+      addItem(Icons.location_on, m['location']);
+      addItem(Icons.phone, m['phone']);
+      addItem(Icons.code, m['github']);
+      addItem(Icons.link, m['linkedin']);
+      addItem(Icons.public, m['website']);
 
-return Stack(
-children: [
-Container(
-width: 320,
-color: const Color(0xFF0D47A1),
-padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
-child: Wrap(
-spacing: 30,
-runSpacing: 12,
-alignment: WrapAlignment.start,
-children: items,
-),
-),
-Positioned(
-right: 0,
-top: 0,
-child: IconButton(
-onPressed: () {
-setState(() {
-_editingContact = true;
-_emailCtrl.text = (m['email'] ?? '').toString();
-_locationCtrl.text = (m['location'] ?? '').toString();
-_phoneCtrl.text = (m['phone'] ?? '').toString();
-_githubCtrl.text = (m['github'] ?? '').toString();
-_linkedinCtrl.text = (m['linkedin'] ?? '').toString();
-_websiteCtrl.text = (m['website'] ?? '').toString();
-});
-},
-icon: const Icon(Icons.edit, color: Colors.black),
-),
-)
-],
-);
-}
+      return Stack(
+        children: [
+          Container(
+            width: 320,
+            color: const Color(0xFF0D47A1),
+            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+            child: Wrap(
+              spacing: 30,
+              runSpacing: 12,
+              alignment: WrapAlignment.start,
+              children: items,
+            ),
+          ),
+          Positioned(
+            right: 0,
+            top: 0,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // AI Enhance Button
+                _enhancingContact
+                    ? const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.black),
+                  ),
+                )
+                    : IconButton(
+                  onPressed: () {
+                    _enhanceContactField(data);
+                  },
+                  icon: const Icon(Icons.auto_awesome, size: 18, color: Colors.black),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                ),
+                const SizedBox(width: 4),
+                // Edit Button
+                IconButton(
+                  onPressed: () {
+                    setState(() {
+                      _editingContact = true;
+                      _emailCtrl.text = (m['email'] ?? '').toString();
+                      _locationCtrl.text = (m['location'] ?? '').toString();
+                      _phoneCtrl.text = (m['phone'] ?? '').toString();
+                      _githubCtrl.text = (m['github'] ?? '').toString();
+                      _linkedinCtrl.text = (m['linkedin'] ?? '').toString();
+                      _websiteCtrl.text = (m['website'] ?? '').toString();
+                    });
+                  },
+                  icon: const Icon(Icons.edit, size: 18, color: Colors.black),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                ),
+              ],
+            ),
+          )
+        ],
+      );
+    }
 
-return Card(
-margin: const EdgeInsets.only(top: 12, bottom: 12,),
-child: Padding(
-padding: const EdgeInsets.all(12),
-child: Column(
-children: [
-_contactField(_emailCtrl, 'Email', Icons.email),
-_contactField(_locationCtrl, 'Location', Icons.location_on),
-_contactField(_phoneCtrl, 'Phone', Icons.phone),
-_contactField(_githubCtrl, 'GitHub', Icons.code),
-_contactField(_linkedinCtrl, 'LinkedIn', Icons.link),
-_contactField(_websiteCtrl, 'Website', Icons.public),
-const SizedBox(height: 8),
-Row(children: [
-ElevatedButton.icon(
-onPressed: () async {
-await _savePatch(section: 'contact', value: {
-'email': _emailCtrl.text.trim(),
-'location': _locationCtrl.text.trim(),
-'phone': _phoneCtrl.text.trim(),
-'github': _githubCtrl.text.trim(),
-'linkedin': _linkedinCtrl.text.trim(),
-'website': _websiteCtrl.text.trim(),
-});
-if (mounted) setState(() => _editingContact = false);
-},
-icon: const Icon(Icons.check),
-label: const Text('Save'),
-),
-const SizedBox(width: 8),
-TextButton(
-onPressed: () => setState(() => _editingContact = false),
-child: const Text('Cancel'),
-),
-])
-],
-),
-),
-);
-}
+    return Card(
+      margin: const EdgeInsets.only(top: 12, bottom: 12),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          children: [
+            _enhanceableContactField(_emailCtrl, 'Email', Icons.email, 'email'),
+            _enhanceableContactField(_locationCtrl, 'Location', Icons.location_on, 'location'),
+            _enhanceableContactField(_phoneCtrl, 'Phone', Icons.phone, 'phone'),
+            _enhanceableContactField(_githubCtrl, 'GitHub', Icons.code, 'github'),
+            _enhanceableContactField(_linkedinCtrl, 'LinkedIn', Icons.link, 'linkedin'),
+            _enhanceableContactField(_websiteCtrl, 'Website', Icons.public, 'website'),
+            const SizedBox(height: 8),
+            Row(children: [
+              ElevatedButton.icon(
+                onPressed: () async {
+                  await _savePatch(section: 'contact', value: {
+                    'email': _emailCtrl.text.trim(),
+                    'location': _locationCtrl.text.trim(),
+                    'phone': _phoneCtrl.text.trim(),
+                    'github': _githubCtrl.text.trim(),
+                    'linkedin': _linkedinCtrl.text.trim(),
+                    'website': _websiteCtrl.text.trim(),
+                  });
+                  if (mounted) setState(() => _editingContact = false);
+                },
+                icon: const Icon(Icons.check),
+                label: const Text('Save'),
+              ),
+              const SizedBox(width: 8),
+              TextButton(
+                onPressed: () => setState(() => _editingContact = false),
+                child: const Text('Cancel'),
+              ),
+            ])
+          ],
+        ),
+      ),
+    );
+  }
 
-Widget _contactField(TextEditingController c, String label, IconData icon) {
-return Padding(
-padding: const EdgeInsets.only(bottom: 8.0),
-child: TextField(
-controller: c,
-decoration: InputDecoration(
-labelText: label,
-prefixIcon: Icon(icon),
-border: const OutlineInputBorder(),
-),
-),
-);
-}
+// New method for enhanceable contact fields with AI button
+  Widget _enhanceableContactField(TextEditingController c, String label, IconData icon, String fieldType) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8.0),
+      child: Row(
+        children: [
+          Expanded(
+            child: TextField(
+              controller: c,
+              decoration: InputDecoration(
+                labelText: label,
+                prefixIcon: Icon(icon),
+                border: const OutlineInputBorder(),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          // AI Enhance Button for individual field
+          _getEnhancingState(fieldType)
+              ? const SizedBox(
+            width: 18,
+            height: 18,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          )
+              : IconButton(
+            tooltip: 'Enhance with AI',
+            onPressed: () => _enhanceContactField({fieldType: c.text}, specificField: fieldType),
+            icon: const Icon(Icons.auto_awesome, size: 18),
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
+          ),
+        ],
+      ),
+    );
+  }
+
+// Method to enhance contact field
+  void _enhanceContactField(Map<String, dynamic> contactData, {String? specificField}) async {
+    setState(() {
+      if (specificField != null) {
+        _setEnhancingState(specificField, true);
+      } else {
+        _enhancingContact = true;
+      }
+    });
+
+    try {
+      final aiService = AIService();
+      String prompt = """
+Please enhance the following contact information to make it more professional and standardized.
+Follow these guidelines:
+- Email: Ensure proper format (name@domain.com)
+- Phone: Format with country code if missing (e.g., +1 123-456-7890)
+- Location: Use standard format (City, State/Country)
+- URLs: Ensure they are complete and use standard formats
+- Make all information consistent and professional
+
+Contact information to enhance:
+${contactData.entries.map((e) => "${e.key}: ${e.value}").join("\n")}
+""";
+
+      final enhancedContent = await aiService.polishCV(contactData);
+
+      // Parse the enhanced content and update the appropriate fields
+      _updateContactFields(enhancedContent, specificField: specificField);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('AI enhancement failed: $e')),
+        );
+      }
+    } finally {
+      setState(() {
+        if (specificField != null) {
+          _setEnhancingState(specificField, false);
+        } else {
+          _enhancingContact = false;
+        }
+      });
+    }
+  }
+
+// Helper method to update contact fields with AI-enhanced content
+  void _updateContactFields(String enhancedContent, {String? specificField}) {
+    // Parse the enhanced content and update the appropriate controllers
+    // This is a simplified implementation - you might want to refine it
+
+    final lines = enhancedContent.split('\n');
+    for (var line in lines) {
+      if (line.toLowerCase().contains('email:')) {
+        final email = line.split(':').length > 1 ? line.split(':')[1].trim() : '';
+        if (specificField == null || specificField == 'email') {
+          _emailCtrl.text = email;
+        }
+      } else if (line.toLowerCase().contains('location:')) {
+        final location = line.split(':').length > 1 ? line.split(':')[1].trim() : '';
+        if (specificField == null || specificField == 'location') {
+          _locationCtrl.text = location;
+        }
+      } else if (line.toLowerCase().contains('phone:')) {
+        final phone = line.split(':').length > 1 ? line.split(':')[1].trim() : '';
+        if (specificField == null || specificField == 'phone') {
+          _phoneCtrl.text = phone;
+        }
+      } else if (line.toLowerCase().contains('github:')) {
+        final github = line.split(':').length > 1 ? line.split(':')[1].trim() : '';
+        if (specificField == null || specificField == 'github') {
+          _githubCtrl.text = github;
+        }
+      } else if (line.toLowerCase().contains('linkedin:')) {
+        final linkedin = line.split(':').length > 1 ? line.split(':')[1].trim() : '';
+        if (specificField == null || specificField == 'linkedin') {
+          _linkedinCtrl.text = linkedin;
+        }
+      } else if (line.toLowerCase().contains('website:')) {
+        final website = line.split(':').length > 1 ? line.split(':')[1].trim() : '';
+        if (specificField == null || specificField == 'website') {
+          _websiteCtrl.text = website;
+        }
+      }
+    }
+  }
+
+// Helper method to get enhancing state for specific fields
+  bool _getEnhancingState(String fieldType) {
+    switch (fieldType) {
+      case 'email': return _enhancingContact; // You might want to create separate states for each field
+      case 'location': return _enhancingContact;
+      case 'phone': return _enhancingContact;
+      case 'github': return _enhancingContact;
+      case 'linkedin': return _enhancingContact;
+      case 'website': return _enhancingContact;
+      default: return false;
+    }
+  }
 
 // ----- Skills -----
   Widget _buildSkills(List<String> skills, BuildContext context) {
@@ -813,7 +995,23 @@ border: const OutlineInputBorder(),
               children: [
                 Text("SKILLS".toUpperCase(),
                     style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black)),
-                const SizedBox(width: 8), // 2 spaces distance
+                const SizedBox(width: 8),
+                // AI Enhance Button
+                _enhancingSkills
+                    ? const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+                    : IconButton(
+                  tooltip: 'Enhance skills with AI',
+                  onPressed: () => _enhanceSkills(skills),
+                  icon: const Icon(Icons.auto_awesome, size: 18),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                ),
+                const SizedBox(width: 8),
+                // Edit Button
                 IconButton(
                   tooltip: 'Edit skills',
                   onPressed: () {
@@ -861,64 +1059,120 @@ border: const OutlineInputBorder(),
       );
     }
 
-return Padding(
-padding: const EdgeInsets.only(top: 16),
-child: _sectionBlock(
-"SKILLS",
-Column(
-crossAxisAlignment: CrossAxisAlignment.start,
-children: [
-Wrap(
-spacing: 8,
-runSpacing: -8,
-children: _skillsWorking
-    .map((s) => InputChip(
-label: Text(s),
-onDeleted: () => setState(() => _skillsWorking.remove(s)),
-))
-    .toList(),
-),
-const SizedBox(height: 8),
-Row(children: [
-Expanded(
-child: TextField(
-controller: _newSkillCtrl,
-decoration: const InputDecoration(
-hintText: 'Add a skill and press +',
-border: OutlineInputBorder(),
-isDense: true,
-),
-onSubmitted: (_) => _addSkill(),
-),
-),
-const SizedBox(width: 8),
-ElevatedButton.icon(
-onPressed: _addSkill,
-icon: const Icon(Icons.add),
-label: const Text('Add'),
-),
-]),
-const SizedBox(height: 8),
-Row(children: [
-ElevatedButton.icon(
-onPressed: () async {
-await _savePatch(section: 'skills', value: _skillsWorking);
-if (mounted) setState(() => _editingSkills = false);
-},
-icon: const Icon(Icons.check),
-label: const Text('Save'),
-),
-const SizedBox(width: 8),
-TextButton(
-onPressed: () => setState(() => _editingSkills = false),
-child: const Text('Cancel'),
-),
-])
-],
-),
-),
-);
-}
+    return Padding(
+      padding: const EdgeInsets.only(top: 16),
+      child: _sectionBlock(
+        "SKILLS",
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Wrap(
+                    spacing: 8,
+                    runSpacing: -8,
+                    children: _skillsWorking
+                        .map((s) => InputChip(
+                      label: Text(s),
+                      onDeleted: () => setState(() => _skillsWorking.remove(s)),
+                    ))
+                        .toList(),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                // AI Enhance Button in Edit Mode
+                _enhancingSkills
+                    ? const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+                    : IconButton(
+                  tooltip: 'Enhance skills with AI',
+                  onPressed: () => _enhanceSkills(_skillsWorking),
+                  icon: const Icon(Icons.auto_awesome, size: 18),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Row(children: [
+              Expanded(
+                child: TextField(
+                  controller: _newSkillCtrl,
+                  decoration: const InputDecoration(
+                    hintText: 'Add a skill and press +',
+                    border: OutlineInputBorder(),
+                    isDense: true,
+                  ),
+                  onSubmitted: (_) => _addSkill(),
+                ),
+              ),
+              const SizedBox(width: 8),
+              ElevatedButton.icon(
+                onPressed: _addSkill,
+                icon: const Icon(Icons.add),
+                label: const Text('Add'),
+              ),
+            ]),
+            const SizedBox(height: 8),
+            Row(children: [
+              ElevatedButton.icon(
+                onPressed: () async {
+                  await _savePatch(section: 'skills', value: _skillsWorking);
+                  if (mounted) setState(() => _editingSkills = false);
+                },
+                icon: const Icon(Icons.check),
+                label: const Text('Save'),
+              ),
+              const SizedBox(width: 8),
+              TextButton(
+                onPressed: () => setState(() => _editingSkills = false),
+                child: const Text('Cancel'),
+              ),
+            ])
+          ],
+        ),
+      ),
+    );
+  }
+
+// Add this method to handle skills enhancement
+  void _enhanceSkills(List<String> currentSkills) async {
+    setState(() => _enhancingSkills = true);
+
+    try {
+      final aiService = AIService();
+      final enhancedSkills = await aiService.polishCV({'skills': currentSkills});
+
+      // Parse the enhanced skills (this is a simple implementation)
+      // You might need to adjust this based on how your AI service returns data
+      final newSkills = enhancedSkills.split(',')
+          .map((skill) => skill.trim())
+          .where((skill) => skill.isNotEmpty)
+          .toList();
+
+      setState(() {
+        _skillsWorking = newSkills;
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Skills enhanced with AI!')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('AI enhancement failed: $e')),
+        );
+      }
+    } finally {
+      setState(() => _enhancingSkills = false);
+    }
+  }
 
 void _addSkill() {
 final t = _newSkillCtrl.text.trim();
@@ -930,7 +1184,6 @@ _newSkillCtrl.clear();
 }
 
 // ----- Languages (chips editor, like skills) -----
-// ----- Languages -----
   Widget _buildLanguages(List<String> languages) {
     if (!_editingLanguages) {
       return Column(
@@ -941,7 +1194,23 @@ _newSkillCtrl.clear();
             children: [
               Text("LANGUAGES".toUpperCase(),
                   style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black)),
-              const SizedBox(width: 8), // 2 spaces distance
+              const SizedBox(width: 8),
+              // AI Enhance Button
+              _enhancingLanguages
+                  ? const SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+                  : IconButton(
+                tooltip: 'Enhance languages with AI',
+                onPressed: () => _enhanceLanguages(languages),
+                icon: const Icon(Icons.auto_awesome, size: 18),
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+              ),
+              const SizedBox(width: 8),
+              // Edit Button
               IconButton(
                 tooltip: 'Edit languages',
                 onPressed: () {
@@ -971,61 +1240,117 @@ _newSkillCtrl.clear();
         ],
       );
     }
-return _sectionBlock(
-"LANGUAGES",
-Column(
-crossAxisAlignment: CrossAxisAlignment.start,
-children: [
-Wrap(
-spacing: 8,
-runSpacing: -8,
-children: _langsWorking
-    .map((s) => InputChip(
-label: Text(s),
-onDeleted: () => setState(() => _langsWorking.remove(s)),
-))
-    .toList(),
-),
-const SizedBox(height: 8),
-Row(children: [
-Expanded(
-child: TextField(
-controller: _newLangCtrl,
-decoration: const InputDecoration(
-hintText: 'Add a language and press +',
-border: OutlineInputBorder(),
-isDense: true,
-),
-onSubmitted: (_) => _addLanguage(),
-),
-),
-const SizedBox(width: 8),
-ElevatedButton.icon(
-onPressed: _addLanguage,
-icon: const Icon(Icons.add),
-label: const Text('Add'),
-),
-]),
-const SizedBox(height: 8),
-Row(children: [
-ElevatedButton.icon(
-onPressed: () async {
-await _savePatch(section: 'languages', value: _langsWorking);
-if (mounted) setState(() => _editingLanguages = false);
-},
-icon: const Icon(Icons.check),
-label: const Text('Save'),
-),
-const SizedBox(width: 8),
-TextButton(
-onPressed: () => setState(() => _editingLanguages = false),
-child: const Text('Cancel'),
-),
-])
-],
-),
-);
-}
+
+    return _sectionBlock(
+      "LANGUAGES",
+      Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Wrap(
+                  spacing: 8,
+                  runSpacing: -8,
+                  children: _langsWorking
+                      .map((s) => InputChip(
+                    label: Text(s),
+                    onDeleted: () => setState(() => _langsWorking.remove(s)),
+                  ))
+                      .toList(),
+                ),
+              ),
+              const SizedBox(width: 8),
+              // AI Enhance Button in Edit Mode
+              _enhancingLanguages
+                  ? const SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+                  : IconButton(
+                tooltip: 'Enhance languages with AI',
+                onPressed: () => _enhanceLanguages(_langsWorking),
+                icon: const Icon(Icons.auto_awesome, size: 18),
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(children: [
+            Expanded(
+              child: TextField(
+                controller: _newLangCtrl,
+                decoration: const InputDecoration(
+                  hintText: 'Add a language and press +',
+                  border: OutlineInputBorder(),
+                  isDense: true,
+                ),
+                onSubmitted: (_) => _addLanguage(),
+              ),
+            ),
+            const SizedBox(width: 8),
+            ElevatedButton.icon(
+              onPressed: _addLanguage,
+              icon: const Icon(Icons.add),
+              label: const Text('Add'),
+            ),
+          ]),
+          const SizedBox(height: 8),
+          Row(children: [
+            ElevatedButton.icon(
+              onPressed: () async {
+                await _savePatch(section: 'languages', value: _langsWorking);
+                if (mounted) setState(() => _editingLanguages = false);
+              },
+              icon: const Icon(Icons.check),
+              label: const Text('Save'),
+            ),
+            const SizedBox(width: 8),
+            TextButton(
+              onPressed: () => setState(() => _editingLanguages = false),
+              child: const Text('Cancel'),
+            ),
+          ])
+        ],
+      ),
+    );
+  }
+
+// Add this method to handle languages enhancement
+  void _enhanceLanguages(List<String> currentLanguages) async {
+    setState(() => _enhancingLanguages = true);
+
+    try {
+      final aiService = AIService();
+      final enhancedLanguages = await aiService.polishCV({'languages': currentLanguages});
+
+      // Parse the enhanced languages
+      final newLanguages = enhancedLanguages.split(',')
+          .map((lang) => lang.trim())
+          .where((lang) => lang.isNotEmpty)
+          .toList();
+
+      setState(() {
+        _langsWorking = newLanguages;
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Languages enhanced with AI!')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('AI enhancement failed: $e')),
+        );
+      }
+    } finally {
+      setState(() => _enhancingLanguages = false);
+    }
+  }
 
 void _addLanguage() {
 final t = _newLangCtrl.text.trim();
@@ -1036,6 +1361,7 @@ _newLangCtrl.clear();
 });
 }
 
+// Generic section with edit button and AI enhance button
   Widget _buildComplexWithEditor(String title, String sectionKey, dynamic data, {required VoidCallback onEdit}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1045,7 +1371,23 @@ _newLangCtrl.clear();
           children: [
             Text(title.toUpperCase(),
                 style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black)),
-            const SizedBox(width: 8), // 2 spaces distance
+            const SizedBox(width: 8),
+            // AI Enhance Button
+            _getSectionEnhancingState(sectionKey)
+                ? const SizedBox(
+              width: 18,
+              height: 18,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            )
+                : IconButton(
+              tooltip: 'Enhance with AI',
+              onPressed: () => _enhanceField(sectionKey, data.toString()),
+              icon: const Icon(Icons.auto_awesome, size: 18),
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+            ),
+            const SizedBox(width: 8),
+            // Edit Button
             IconButton(
               tooltip: 'Edit $title',
               onPressed: onEdit,
@@ -1060,6 +1402,7 @@ _newLangCtrl.clear();
       ],
     );
   }
+
 
   Widget _renderComplexWithoutTitle(String title, dynamic data) {
     switch (title) {
@@ -1870,5 +2213,231 @@ controller: _certDateCtrls[index],
     await _savePatch(section: 'certifications', value: certifications);
   }
 
-// ... (rest of the code remains the same)
+// Method to enhance field content with AI
+  Future<void> _enhanceField(String fieldType, dynamic currentData) async {
+    _aiPromptCtrl.clear();
+
+    // Convert data to string for the prompt
+    String contentString;
+    if (currentData is Map) {
+      contentString = jsonEncode(currentData);
+    } else if (currentData is List) {
+      contentString = currentData.join(', ');
+    } else {
+      contentString = currentData.toString();
+    }
+
+    // Show a dialog for custom AI prompt
+    final enhancedContent = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text("Enhance $fieldType with AI"),
+        content: TextField(
+          controller: _aiPromptCtrl,
+          decoration: const InputDecoration(
+            hintText: "Optional: Add specific instructions for AI",
+            labelText: "AI Instructions",
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Cancel"),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              // Call AI service
+              final enhanced = await _callAIService(fieldType, contentString, _aiPromptCtrl.text);
+              Navigator.pop(context, enhanced);
+            },
+            child: const Text("Enhance"),
+          ),
+        ],
+      ),
+    );
+
+    if (enhancedContent != null && enhancedContent.isNotEmpty) {
+      // Update the appropriate field based on fieldType
+      _updateFieldWithAI(fieldType, enhancedContent);
+    }
+  }
+
+// Simulate AI service call
+  Future<String> _callAIService(String fieldType, String content, String prompt) async {
+    // Set enhancing state to true
+    _setEnhancingState(fieldType, true);
+
+    try {
+      // Initialize your AI service
+      final aiService = AIService();
+
+      // Call the appropriate AI service method based on field type
+      switch (fieldType) {
+        case 'header':
+        // For header, we might want to enhance the summary
+          return await aiService.polishSummary(content);
+        case 'skills':
+        // For skills, we can use the general polishCV method
+          return await aiService.polishCV({'skills': content.split(',')});
+        case 'experience':
+        // For experience, we can use generateExperienceBullets
+        // Note: This requires parsing the experience data properly
+          final expData = _parseExperienceData(content);
+          final bullets = await aiService.generateExperienceBullets(expData);
+          return bullets.join('\n• ');
+        case 'projects':
+        // For projects, use the general polishCV method
+          return await aiService.polishCV({'projects': content});
+        case 'education':
+        // For education, use the general polishCV method
+          return await aiService.polishCV({'education': content});
+        case 'certifications':
+        // For certifications, use the general polishCV method
+          return await aiService.polishCV({'certifications': content});
+        case 'languages':
+        // For languages, use the general polishCV method
+          return await aiService.polishCV({'languages': content.split(',')});
+        default:
+
+        // In the _callAIService method, after getting the response:
+          String result = await aiService.polishSummary(content);
+          return _extractTextFromAIResponse(result);
+      }
+    } catch (e) {
+      // Handle error
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('AI enhancement failed: $e')),
+        );
+      }
+      return content; // Return original content on error
+    } finally {
+      // Reset enhancing state
+      _setEnhancingState(fieldType, false);
+    }
+  }
+
+// Helper method to parse experience data for AI service
+  Map<String, dynamic> _parseExperienceData(String content) {
+    // This is a simplified parser - you might need to adjust based on your data structure
+    try {
+      // Try to parse as JSON first
+      return jsonDecode(content);
+    } catch (e) {
+      // If not JSON, create a simple structure
+      return {
+        'title': 'Experience',
+        'company': 'Company',
+        'details': [content]
+      };
+    }
+  }
+
+// Helper method to set enhancing state
+  void _setEnhancingState(String fieldType, bool value) {
+    setState(() {
+      switch (fieldType) {
+        case 'header':
+          _enhancingHeader = value;
+          break;
+        case 'contact':
+          _enhancingContact = value;
+          break;
+        case 'skills':
+          _enhancingSkills = value;
+          break;
+        case 'experience':
+          _enhancingExperience = value;
+          break;
+        case 'projects':
+          _enhancingProjects = value;
+          break;
+        case 'education':
+          _enhancingEducation = value;
+          break;
+        case 'certifications':
+          _enhancingCertifications = value;
+          break;
+        case 'languages':
+          _enhancingLanguages = value;
+          break;
+      }
+    });
+  }
+
+// Update field with AI-enhanced content
+  void _updateFieldWithAI(String fieldType, String enhancedContent) {
+    switch (fieldType) {
+      case 'header':
+      // For header, update the summary
+        setState(() {
+          _summaryCtrl.text = enhancedContent;
+          // If you want to save automatically, call _savePatch
+          // _savePatch(section: 'header', value: {'summary': enhancedContent});
+        });
+        break;
+      case 'skills':
+      // For skills, update the skills list
+        setState(() {
+          _skillsWorking = enhancedContent.split(',');
+          // If you want to save automatically, call _savePatch
+          // _savePatch(section: 'skills', value: _skillsWorking);
+        });
+        break;
+      case 'experience':
+      // For experience, you might need to parse the enhanced content
+      // and update the specific experience item
+      // This is more complex and would require knowing which experience item is being edited
+        break;
+    // Add cases for other field types
+      default:
+      // For other fields, show a message or handle appropriately
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('AI enhancement completed. Please review and save.')),
+          );
+        }
+    }
+  }
+
+// Helper method to get enhancing state
+  bool  _getSectionEnhancingState(String sectionKey) {
+    switch (sectionKey) {
+      case 'header': return _enhancingHeader;
+      case 'contact': return _enhancingContact;
+      case 'skills': return _enhancingSkills;
+      case 'experience': return _enhancingExperience;
+      case 'projects': return _enhancingProjects;
+      case 'education': return _enhancingEducation;
+      case 'certifications': return _enhancingCertifications;
+      case 'languages': return _enhancingLanguages;
+      default: return false;
+    }
+  }
+
+  // Add this helper method to extract text from possible JSON responses
+  String _extractTextFromAIResponse(String response) {
+    try {
+      // Try to parse as JSON
+      final jsonResponse = jsonDecode(response);
+
+      // Handle different JSON structures that might be returned by your AI service
+      if (jsonResponse is Map) {
+        if (jsonResponse.containsKey('summary')) {
+          return jsonResponse['summary'];
+        } else if (jsonResponse.containsKey('text')) {
+          return jsonResponse['text'];
+        } else if (jsonResponse.containsKey('result')) {
+          return jsonResponse['result'];
+        }
+      }
+
+      // If it's not a recognized JSON structure, return the original response
+      return response;
+    } catch (e) {
+      // If it's not JSON, return the original response
+      return response;
+    }
+  }
+
 }
