@@ -197,6 +197,9 @@ class FirestoreService {
 
   /// Save a final CV manually (user saves from PreviewScreen)
   /// Save a final CV manually (user saves from PreviewScreen)
+  /// Save a final CV manually (user saves from PreviewScreen)
+  /// Save a final CV manually (user saves from PreviewScreen)
+  /// Save a final CV manually (user saves from PreviewScreen)
   Future<void> saveCVToLibrary(String userId, CVModel cv, {String? customName}) async {
     try {
       if (userId.isEmpty) return;
@@ -210,20 +213,27 @@ class FirestoreService {
           ? cv.cvId
           : "cv_${DateTime.now().millisecondsSinceEpoch}";
 
-      // Create a copy of the CV data without modifying the name field
+      // Keep the original CV data intact
       final updatedCvData = Map<String, dynamic>.from(cv.cvData);
 
-      // Store the library name separately, don't overwrite the CV's actual name
+      // Store both the original CV name and the custom library name
       final dataToSave = {
-        ...cv.toMap(),  // This includes all the CV data with the correct name
+        'cvId': docId,
+        'userId': userId,
+        'cvData': updatedCvData,  // This contains the original name
+        'isCompleted': cv.isCompleted,
+        'aiEnhancedText': cv.aiEnhancedText,
+        'createdAt': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
         'libraryName': customName ?? "My CV",  // Store custom name separately
-        'savedAt': FieldValue.serverTimestamp(), // Add a timestamp for when it was saved to library
+        'originalName': cv.cvData['name'] ?? '',  // Preserve the original name
+        'savedAt': FieldValue.serverTimestamp(),
       };
 
       await libraryRef.doc(docId).set(dataToSave);
 
       debugPrint(
-          "✅ CV saved to Library: $docId (library name: ${customName ?? "My CV"}, CV name: ${cv.cvData['name']})");
+          "✅ CV saved to Library: $docId (library name: ${customName ?? "My CV"}, original name: ${cv.cvData['name']})");
     } catch (e) {
       debugPrint('❌ Error saving CV to Library: $e');
     }
@@ -234,6 +244,7 @@ class FirestoreService {
 // When loading a CV from the library, make sure to use the CV's actual name
 // not the library name
 
+  /// Fetch user-saved CVs
   /// Fetch user-saved CVs
   Future<List<CVModel>> getLibraryCVs(String userId) async {
     try {
@@ -249,13 +260,18 @@ class FirestoreService {
           .map((doc) {
         final data = doc.data() as Map<String, dynamic>;
 
-        // Extract the CV data (which contains the actual name)
+        // Extract the CV data (which contains the original name)
         final cvData = Map<String, dynamic>.from(data['cvData'] ?? {});
+
+        // If we have an originalName field, use it to restore the name
+        if (data.containsKey('originalName') && data['originalName'] != null) {
+          cvData['name'] = data['originalName'];
+        }
 
         return CVModel(
           cvId: data['cvId'] ?? doc.id,
           userId: userId,
-          cvData: cvData,  // This contains the actual name, not the library name
+          cvData: cvData,  // This contains the original name
           isCompleted: data['isCompleted'] ?? false,
           aiEnhancedText: data['aiEnhancedText'],
           createdAt: (data['createdAt'] is Timestamp)
